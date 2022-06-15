@@ -1,0 +1,1734 @@
+{
+  "q8_1": {
+    "query": "select count(distinct q1.id) \n FROM \n site as s,\n post_link as pl,\n question as q1,\n question as q2,\n comment as c1,\n comment as c2,\n tag as t,\n tag_question as tq1,\n tag_question as tq2 \n WHERE 1=1 \n AND pl.site_id = s.site_id \n AND s.site_name = '@param0' \n AND pl.site_id = q1.site_id \n AND pl.post_id_from = q1.id \n AND pl.site_id = q2.site_id \n AND pl.post_id_to = q2.id \n AND c1.site_id = q1.site_id \n AND c1.post_id = q1.id \n AND c2.site_id = q2.site_id \n AND c2.post_id = q2.id \n AND c1.date < c2.date \n AND t.name in ('@param1') \n AND t.id = tq1.tag_id \n AND t.site_id = tq1.site_id \n AND t.id = tq2.tag_id \n AND t.site_id = tq2.site_id \n AND t.site_id = pl.site_id \n AND tq1.site_id = q1.site_id \n AND tq1.question_id = q1.id \n AND tq2.site_id = q2.site_id \n AND tq2.question_id = q2.id",
+    "description": "-- relax site name (original uses german only)",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "in"
+      }
+    ]
+  },
+  "q8b_1": {
+    "query": "select count(distinct q1.id) \n FROM \n site as s,\n post_link as pl,\n question as q1,\n question as q2,\n comment as c1,\n comment as c2,\n tag as t,\n tag_question as tq1,\n tag_question as tq2 \n WHERE 1=1 \n AND pl.site_id = s.site_id \n AND s.site_name = '@param0' \n AND pl.site_id = q1.site_id \n AND pl.post_id_from = q1.id \n AND pl.site_id = q2.site_id \n AND pl.post_id_to = q2.id \n AND c1.site_id = q1.site_id \n AND c1.post_id = q1.id \n AND c2.site_id = q2.site_id \n AND c2.post_id = q2.id \n AND c1.date > c2.date \n AND t.name in ('@param1') \n AND t.id = tq1.tag_id \n AND t.site_id = tq1.site_id \n AND t.id = tq2.tag_id \n AND t.site_id = tq2.site_id \n AND t.site_id = pl.site_id \n AND tq1.site_id = q1.site_id \n AND tq1.question_id = q1.id \n AND tq2.site_id = q2.site_id \n AND tq2.question_id = q2.id",
+    "description": "-- relax site name (original uses german only)",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "in"
+      }
+    ]
+  },
+  "q20_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.reputation > @param0 \n AND u2.reputation > @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.last_activity_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "last_activity_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q20_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.upvotes > @param0 \n AND u2.upvotes > @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.last_activity_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "last_activity_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q20_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.downvotes < @param0 \n AND u2.downvotes < @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.last_activity_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "downvotes",
+        "operator": "<"
+      },
+      {
+        "alias": "u2",
+        "column": "downvotes",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "last_activity_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q20_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.reputation > @param0 \n AND u2.reputation > @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.creation_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "creation_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q20_4": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.upvotes > @param0 \n AND u2.upvotes > @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.creation_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "creation_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q20_5": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n so_user as u1,\n so_user as u2,\n answer as a \n WHERE 1=1 \n AND q.id = a.question_id \n AND q.site_id = a.site_id \n AND q.last_activity_date - q.creation_date > interval '14 days' \n AND q.creation_date IS NOT NULL \n AND u1.id = q.owner_user_id \n AND u1.site_id = q.site_id \n AND u2.id = a.owner_user_id \n AND u2.site_id = a.site_id \n AND q.site_id = s.site_id \n AND u1.downvotes < @param0 \n AND u2.downvotes < @param1 \n AND q.view_count > @param2 \n AND s.site_name = '@param3' \n AND date_part('month',q.creation_date)::int = @param4 \n LIMIT 100",
+    "description": "-- Show questions that stayed open longer than n days since x date on site y where the question had at least some view count and both the asker and answerer’s reputation was above some threshold (could be the same or not).",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "downvotes",
+        "operator": "<"
+      },
+      {
+        "alias": "u2",
+        "column": "downvotes",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "date_part('month',q",
+        "column": "creation_date)::int",
+        "operator": "="
+      }
+    ]
+  },
+  "q21_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n tag_question as tq,\n tag as t \n WHERE 1=1 \n AND q.accepted_answer_id IS NULL \n AND q.site_id = s.site_id \n AND s.site_name = '@param0' \n AND tq.question_id = q.id \n AND tq.site_id = q.site_id \n AND t.site_id = tq.site_id \n AND t.id = tq.tag_id \n AND t.name = '@param1' \n AND q.last_activity_date < '@param2' \n AND q.favorite_count > @param3 \n ORDER BY q.view_count DESC \n LIMIT 100",
+    "description": "-- Showing yet-to-be-answered questions for a use-case of 'I would like to help answer a question, which ones are most worth answering based on what I know'",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "favorite_count",
+        "operator": ">"
+      }
+    ]
+  },
+  "q21_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n tag_question as tq,\n tag as t \n WHERE 1=1 \n AND q.accepted_answer_id IS NULL \n AND q.site_id = s.site_id \n AND s.site_name = '@param0' \n AND tq.question_id = q.id \n AND tq.site_id = q.site_id \n AND t.site_id = tq.site_id \n AND t.id = tq.tag_id \n AND t.name = '@param1' \n AND q.last_activity_date < '@param2' \n AND q.view_count > @param3 \n ORDER BY q.view_count DESC \n LIMIT 100",
+    "description": "-- Showing yet-to-be-answered questions for a use-case of 'I would like to help answer a question, which ones are most worth answering based on what I know'",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      }
+    ]
+  },
+  "q21_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n tag_question as tq,\n tag as t \n WHERE 1=1 \n AND q.accepted_answer_id IS NULL \n AND q.site_id = s.site_id \n AND s.site_name = '@param0' \n AND tq.question_id = q.id \n AND tq.site_id = q.site_id \n AND t.site_id = tq.site_id \n AND t.id = tq.tag_id \n AND t.name = '@param1' \n AND q.last_activity_date < '@param2' \n AND q.score > @param3 \n ORDER BY q.view_count DESC \n LIMIT 100",
+    "description": "-- Showing yet-to-be-answered questions for a use-case of 'I would like to help answer a question, which ones are most worth answering based on what I know'",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      }
+    ]
+  },
+  "q21_3": {
+    "query": "SELECT q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n site as s,\n tag_question as tq,\n tag as t \n WHERE 1=1 \n AND q.accepted_answer_id IS NULL \n AND q.site_id = s.site_id \n AND s.site_name = '@param0' \n AND tq.question_id = q.id \n AND tq.site_id = q.site_id \n AND t.site_id = tq.site_id \n AND t.id = tq.tag_id \n AND t.name = '@param1' \n AND q.last_activity_date < '@param2' \n AND q.view_count > @param3 \n AND q.score > @param4 \n ORDER BY q.view_count DESC \n LIMIT 100",
+    "description": "-- Showing yet-to-be-answered questions for a use-case of 'I would like to help answer a question, which ones are most worth answering based on what I know'",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      }
+    ]
+  },
+  "q24_0": {
+    "query": "SELECT q.id, q.score \n FROM \n site as s,\n question as q,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND q.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY q.score DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of top questions user asked on a given site. Top: parameterize by view_count or score. Restrict to a subset of sites. Sort by score.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q24_1": {
+    "query": "SELECT q.id, q.view_count \n FROM \n site as s,\n question as q,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND q.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY q.view_count DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of top questions user asked on a given site. Top: parameterize by view_count or score. Restrict to a subset of sites. Sort by view count.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q24_2": {
+    "query": "SELECT q.id, q.last_activity_date \n FROM \n site as s,\n question as q,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND q.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY q.last_activity_date DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of top questions user asked on a given site. Top: parameterize by view_count or score. Restrict to a subset of sites. Sort by last activity date.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q25_0": {
+    "query": "SELECT a.id, a.score \n FROM \n site as s,\n answer as a,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND a.owner_user_id = u.id \n AND a.site_id = u.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY a.score DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of \"top\" answers. can sort by multiple things as before. Sort by score.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q25_1": {
+    "query": "SELECT a.id, a.view_count \n FROM \n site as s,\n answer as a,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND a.owner_user_id = u.id \n AND a.site_id = u.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY a.view_count DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of \"top\" answers. can sort by multiple things as before. Sort by view count.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q25_2": {
+    "query": "SELECT a.id, a.score \n FROM \n site as s,\n answer as a,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND a.owner_user_id = u.id \n AND a.site_id = u.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param1' \n ORDER BY a.view_count DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of \"top\" answers. can sort by multiple things as before. filter by questions with certain popularity, etc, or questions with accepted answers.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q25_3": {
+    "query": "SELECT a.id, a.score \n FROM \n site as s,\n question as q,\n answer as a,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND a.owner_user_id = u.id \n AND a.site_id = u.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param1' \n AND q.site_id = s.site_id \n AND q.accepted_answer_id = a.id \n ORDER BY a.score DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of \"top\" answers. can sort by multiple things as before. Sort by score and only filter by accepted answers.",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q25_4": {
+    "query": "SELECT a.id, a.score \n FROM \n site as s,\n answer as a,\n so_user as u,\n account as acc \n WHERE 1=1 \n AND acc.id = u.account_id \n AND acc.id = @param0 \n AND a.owner_user_id = u.id \n AND a.site_id = u.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param1' \n AND LENGTH(a.body) > @param2 \n ORDER BY a.score DESC \n LIMIT 50",
+    "description": "-- For given account id, get list of \"top\" answers. can sort by multiple things as before. filter by sufficiently long answers (i.e. length of body).",
+    "predicates": [
+      {
+        "alias": "acc",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "LENGTH(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q27_0": {
+    "query": "select max(q.score) as score, max(q.view_count) as view_count, count(*) as answer_count, max(q.title) as title, max(q.tagstring) as tags, max(q.last_editor_id) as editor, max(acc.display_name) as name, max(u.reputation) as reputation \n FROM \n question as q,\n answer as a,\n account as acc,\n so_user as u \n WHERE 1=1 \n AND a.question_id = q.id \n AND q.site_id = a.site_id \n AND acc.id = q.last_editor_id \n AND u.account_id = acc.id \n AND q.id = @param0 \n AND q.site_id = @param1",
+    "description": "-- Gather information for each question in a feed.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "site_id",
+        "operator": "="
+      }
+    ]
+  },
+  "q28_0": {
+    "query": "select q.score, q.view_count, count(*) as answer_count, q.title, q.tagstring, q.last_editor_id, acc.display_name \n FROM \n question as q,\n answer as a,\n account as acc \n WHERE 1=1 \n AND a.question_id = q.id \n AND q.site_id = a.site_id \n AND acc.id = q.last_editor_id \n AND q.id = @param0 \n AND q.site_id = @param1 \n GROUP BY q.score, q.view_count, q.title, q.tagstring, q.last_editor_id, acc.display_name",
+    "description": "-- See: go/paste/4870973602922496?raw",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "id",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "site_id",
+        "operator": "="
+      }
+    ]
+  },
+  "q29_0": {
+    "query": "SELECT COUNT(*) \n FROM \n site as s,\n post_link as pl,\n question as q1,\n question as q2,\n tag as t,\n tag_question as tq1,\n tag_question as tq2 \n WHERE 1=1 \n AND s.site_name = '@param0' \n AND pl.site_id = s.site_id \n AND pl.site_id = q1.site_id \n AND pl.site_id = q2.site_id \n AND pl.post_id_from = q1.id \n AND pl.post_id_to = q2.id \n AND pl.link_type = 3 \n AND t.name in ('@param1') \n AND t.id = tq1.tag_id \n AND t.site_id = tq1.site_id \n AND t.id = tq2.tag_id \n AND t.site_id = tq2.site_id \n AND t.site_id = pl.site_id \n AND tq1.site_id = q1.site_id \n AND tq1.question_id = q1.id \n AND tq2.site_id = q2.site_id \n AND tq2.question_id = q2.id \n GROUP BY pl.post_id_to, pl.post_id_from",
+    "description": "-- For a given tag and site, number of duplicate questions (similar to q8 in some ways). Makes use of post_link link_type https://meta.stackexchange.com/questions/226837/what-is-the-meaning-of-postlinks-table",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "t",
+        "column": "name",
+        "operator": "in"
+      }
+    ]
+  },
+  "q31_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u1,\n so_user as u2,\n so_user as u3,\n site as s \n WHERE 1=1 \n AND s.site_id = u1.site_id \n AND s.site_id = u2.site_id \n AND s.site_id = u3.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.site_id = u1.site_id \n AND q.owner_user_id = u1.id \n AND a.site_id = u2.site_id \n AND a.owner_user_id = u2.id \n AND a.site_id = u3.site_id \n AND a.last_editor_id = u3.id \n AND u1.reputation > @param0 \n AND u2.reputation > @param1 \n AND u3.reputation > @param2 \n AND q.view_count > @param3 \n AND a.score > @param4 \n AND s.site_name = '@param5' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- Questions with varying constraints on the ages of the asker, answerer, and last editor.",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u3",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q31_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u1,\n so_user as u2,\n so_user as u3,\n site as s \n WHERE 1=1 \n AND s.site_id = u1.site_id \n AND s.site_id = u2.site_id \n AND s.site_id = u3.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.site_id = u1.site_id \n AND q.owner_user_id = u1.id \n AND a.site_id = u2.site_id \n AND a.owner_user_id = u2.id \n AND a.site_id = u3.site_id \n AND a.last_editor_id = u3.id \n AND u1.reputation > @param0 \n AND u2.reputation > @param1 \n AND u3.reputation > @param2 \n AND s.site_name = '@param3' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- Questions with varying constraints on the ages of the asker, answerer, and last editor.",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "u3",
+        "column": "reputation",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q31_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u1,\n so_user as u2,\n so_user as u3,\n site as s \n WHERE 1=1 \n AND s.site_id = u1.site_id \n AND s.site_id = u2.site_id \n AND s.site_id = u3.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.site_id = u1.site_id \n AND q.owner_user_id = u1.id \n AND a.site_id = u2.site_id \n AND a.owner_user_id = u2.id \n AND a.site_id = u3.site_id \n AND a.last_editor_id = u3.id \n AND u1.last_access_date > '@param0' \n AND u1.last_access_date < '@param1' \n AND u2.last_access_date > '@param2' \n AND u2.last_access_date < '@param3' \n AND u3.last_access_date > '@param4' \n AND u3.last_access_date < '@param5' \n AND q.view_count > @param6 \n AND a.score > @param7 \n AND s.site_name = '@param8' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- Questions with varying constraints on the ages of the asker, answerer, and last editor.",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u1",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u2",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u3",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u3",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q31_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u1,\n so_user as u2,\n so_user as u3,\n site as s \n WHERE 1=1 \n AND s.site_id = u1.site_id \n AND s.site_id = u2.site_id \n AND s.site_id = u3.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.site_id = u1.site_id \n AND q.owner_user_id = u1.id \n AND a.site_id = u2.site_id \n AND a.owner_user_id = u2.id \n AND a.site_id = u3.site_id \n AND a.last_editor_id = u3.id \n AND u1.last_access_date > '@param0' \n AND u1.last_access_date < '@param1' \n AND u2.last_access_date > '@param2' \n AND u2.last_access_date < '@param3' \n AND u3.last_access_date > '@param4' \n AND u3.last_access_date < '@param5' \n AND s.site_name = '@param6' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- Questions with varying constraints on the ages of the asker, answerer, and last editor.",
+    "predicates": [
+      {
+        "alias": "u1",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u1",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u2",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u2",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u3",
+        "column": "last_access_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u3",
+        "column": "last_access_date",
+        "operator": "<"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q32_0": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.view_count > 100 \n AND q.view_count < @param0 \n AND q.score > @param1 \n AND q.score < 200 \n AND a.score > @param2 \n AND a.score < 200",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      }
+    ]
+  },
+  "q32_1": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.view_count > @param0 \n AND q.view_count < @param1 \n AND q.score > @param2 \n AND q.score < @param3 \n AND a.score > @param4 \n AND a.score < @param5",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      }
+    ]
+  },
+  "q32_2": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.view_count > @param0 \n AND q.view_count < @param1 \n AND q.score > @param2 \n AND q.score < @param3 \n AND q.creation_date > '@param4' \n AND q.creation_date < '@param5'",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q32_3": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.view_count > @param0 \n AND q.view_count < @param1 \n AND q.score > @param2 \n AND q.score < @param3 \n AND q.creation_date > '@param4' \n AND q.creation_date < '@param5' \n AND a.score > @param6 \n AND a.score < @param7",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      }
+    ]
+  },
+  "q32_4": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.view_count > @param0 \n AND q.view_count < @param1 \n AND a.score > @param2 \n AND a.score < @param3 \n AND a.creation_date > '@param4' \n AND a.creation_date < '@param5'",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "view_count",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q32_5": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND q.last_edit_date > '@param2' \n AND q.last_edit_date < '@param3' \n AND a.creation_date > '@param4' \n AND a.creation_date < '@param5' \n AND a.last_edit_date > '@param6' \n AND a.last_edit_date < '@param7'",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "last_edit_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "last_edit_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "last_edit_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "last_edit_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q32_6": {
+    "query": "select COUNT(*) \n FROM \n question as q \n JOIN \n answer as a \n ON \n a.question_id = q.id \n AND a.site_id = q.site_id \n WHERE 1=1 \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND q.last_activity_date > '@param2' \n AND q.last_activity_date < '@param3' \n AND a.creation_date > '@param4' \n AND a.creation_date < '@param5' \n AND a.last_activity_date > '@param6' \n AND a.last_activity_date < '@param7'",
+    "description": "-- count the number answers to questions matching a series of criteria. The primary goal is challenge the decision on inner vs outer on the join based on the filters.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "last_activity_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "last_activity_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "last_activity_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q33_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n site as s \n WHERE 1=1 \n AND s.site_id = q.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param0' \n AND q.score > @param1 \n AND q.creation_date > '@param2' \n AND length(a.body) > @param3 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q33_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n site as s \n WHERE 1=1 \n AND s.site_id = q.site_id \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND a.site_id = s.site_id \n AND s.site_name = '@param0' \n AND q.score > @param1 \n AND q.creation_date > '@param2' \n AND q.creation_date < '@param3' \n AND length(a.body) > @param4 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      },
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q33_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.score > @param0 \n AND q.creation_date > '@param1' \n AND length(a.body) > @param2 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q33_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.score > @param0 \n AND q.creation_date > '@param1' \n AND q.creation_date < '@param2' \n AND length(a.body) > @param3 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q33_4": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.score > @param0 \n AND q.creation_date > '@param1' \n AND q.creation_date < '@param2' \n AND length(a.body) > @param3 \n AND a.score < @param4 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      }
+    ]
+  },
+  "q33_5": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.score > @param0 \n AND length(a.body) > @param1 \n AND a.score < @param2 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      }
+    ]
+  },
+  "q33_6": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.score > @param0 \n AND length(a.body) > @param1 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q33_7": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND length(q.body) > @param0 \n AND length(a.body) > @param1 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- get top viewed questions by answer length and/or site",
+    "predicates": [
+      {
+        "alias": "length(q",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q34_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.owner_user_id = a.owner_user_id \n AND a.site_id = u.site_id \n AND a.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND a.creation_date > '@param2' \n AND a.creation_date < '@param3' \n AND u.creation_date > '@param4' \n AND u.creation_date < '@param5' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users answering their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q34_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.owner_user_id = a.owner_user_id \n AND a.site_id = u.site_id \n AND a.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.score > @param0 \n AND q.creation_date < '@param1' \n AND u.upvotes > @param2 \n AND u.downvotes < @param3 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users answering their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "downvotes",
+        "operator": "<"
+      }
+    ]
+  },
+  "q34_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n answer as a,\n so_user as u \n WHERE 1=1 \n AND a.question_id = q.id \n AND a.site_id = q.site_id \n AND q.owner_user_id = a.owner_user_id \n AND a.site_id = u.site_id \n AND a.owner_user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND length(a.body) > @param2 \n AND u.creation_date > '@param3' \n AND u.creation_date < '@param4' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users answering their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q35_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n so_user as u \n WHERE 1=1 \n AND c.post_id = q.id \n AND q.owner_user_id = c.user_id \n AND c.site_id = q.site_id \n AND c.site_id = u.site_id \n AND c.user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND c.date > '@param2' \n AND c.date < '@param3' \n AND u.creation_date > '@param4' \n AND u.creation_date < '@param5' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users commenting on their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "c",
+        "column": "date",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "date",
+        "operator": "<"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q35_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n so_user as u \n WHERE 1=1 \n AND c.post_id = q.id \n AND q.owner_user_id = c.user_id \n AND c.site_id = q.site_id \n AND c.site_id = u.site_id \n AND c.user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.score > @param0 \n AND q.creation_date < '@param1' \n AND u.upvotes > @param2 \n AND u.downvotes < @param3 \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users commenting on their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "u",
+        "column": "upvotes",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "downvotes",
+        "operator": "<"
+      }
+    ]
+  },
+  "q35_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n so_user as u \n WHERE 1=1 \n AND c.post_id = q.id \n AND q.owner_user_id = c.user_id \n AND c.site_id = q.site_id \n AND c.site_id = u.site_id \n AND c.user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND length(c.body) > @param2 \n AND u.creation_date > '@param3' \n AND u.creation_date < '@param4' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users commenting on their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q35_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n so_user as u \n WHERE 1=1 \n AND c.post_id = q.id \n AND q.owner_user_id = c.user_id \n AND c.site_id = q.site_id \n AND c.site_id = u.site_id \n AND c.user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND c.score > @param2 \n AND u.creation_date > '@param3' \n AND u.creation_date < '@param4' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users commenting on their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q35_4": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n so_user as u \n WHERE 1=1 \n AND c.post_id = q.id \n AND q.owner_user_id = c.user_id \n AND c.site_id = q.site_id \n AND c.site_id = u.site_id \n AND c.user_id = u.id \n AND q.site_id = u.site_id \n AND q.owner_user_id = u.id \n AND q.creation_date > '@param0' \n AND q.creation_date < '@param1' \n AND c.score > @param2 \n AND length(c.body) > @param3 \n AND u.creation_date > '@param4' \n AND u.creation_date < '@param5' \n ORDER BY q.view_count \n LIMIT 100",
+    "description": "-- execute joins with multiple join conditions around cases of users commenting on their own questions",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "q",
+        "column": "creation_date",
+        "operator": "<"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": ">"
+      },
+      {
+        "alias": "u",
+        "column": "creation_date",
+        "operator": "<"
+      }
+    ]
+  },
+  "q36_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND c.score < @param1 \n AND length(c.body) > @param2 \n AND a.score < @param3 \n AND length(a.body) > @param4 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q36_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND c.score > @param1 \n AND length(c.body) > @param2 \n AND a.score > @param3 \n AND length(a.body) > @param4 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q36_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND length(c.body) > @param1 \n AND length(a.body) > @param2 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q36_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND c.score < @param1 \n AND length(c.body) > @param2 \n AND a.score < @param3 \n AND length(a.body) > @param4 \n AND s.site_name = '@param5' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q36_4": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND c.score > @param1 \n AND length(c.body) > @param2 \n AND a.score > @param3 \n AND length(a.body) > @param4 \n AND s.site_name = '@param5' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q36_5": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = q.id \n AND c.site_id = q.site_id \n AND c.site_id = a.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND length(c.body) > @param1 \n AND length(a.body) > @param2 \n AND s.site_name = '@param3' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the question.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q37_0": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND c.score < @param1 \n AND length(c.body) > @param2 \n AND a.score < @param3 \n AND length(a.body) > @param4 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q37_1": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND c.score > @param1 \n AND length(c.body) > @param2 \n AND a.score > @param3 \n AND length(a.body) > @param4 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q37_2": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer a \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND q.score > @param0 \n AND length(c.body) > @param1 \n AND length(a.body) > @param2 \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      }
+    ]
+  },
+  "q37_3": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND c.score < @param1 \n AND length(c.body) > @param2 \n AND a.score < @param3 \n AND length(a.body) > @param4 \n AND s.site_name = '@param5' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": "<"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q37_4": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND c.score > @param1 \n AND length(c.body) > @param2 \n AND a.score > @param3 \n AND length(a.body) > @param4 \n AND s.site_name = '@param5' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "c",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "a",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  },
+  "q37_5": {
+    "query": "SELECT q.id, q.body, q.score, q.title, q.view_count \n FROM \n question as q,\n comment as c,\n answer as a,\n site as s \n WHERE 1=1 \n AND c.post_id = a.id \n AND c.site_id = a.site_id \n AND c.site_id = q.site_id \n AND a.site_id = q.site_id \n AND a.question_id = q.id \n AND s.site_id = q.site_id \n AND s.site_id = c.site_id \n AND s.site_id = a.site_id \n AND q.score > @param0 \n AND length(c.body) > @param1 \n AND length(a.body) > @param2 \n AND s.site_name = '@param3' \n ORDER BY q.score \n LIMIT 100",
+    "description": "-- get top scored questions by answer and comment length where comment is on the answer.",
+    "predicates": [
+      {
+        "alias": "q",
+        "column": "score",
+        "operator": ">"
+      },
+      {
+        "alias": "length(c",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "length(a",
+        "column": "body)",
+        "operator": ">"
+      },
+      {
+        "alias": "s",
+        "column": "site_name",
+        "operator": "="
+      }
+    ]
+  }
+}

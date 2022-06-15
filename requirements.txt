@@ -1,0 +1,9 @@
+absl-py
+numpy
+pandas
+psycopg2
+pyglib
+python-dateutil
+scipy
+tensorflow
+tensorflow-gnn
