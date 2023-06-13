@@ -20,7 +20,7 @@ from absl import app
 from absl import flags
 from tensorflow.io import gfile
 
-from kepler.training_data_collection_pipeline import utils
+from kepler.training_data_collection_pipeline import query_text_utils
 
 _PARAMETER_VALUES_FILE = flags.DEFINE_string("parameter_values_file", None,
                                              "Parameter values file.")
@@ -49,7 +49,7 @@ def main(unused_argv):
   query_info = parameter_values[query_id]
 
   query_instances = [
-      utils.substitute_query_params(query_info["query"], params)
+      query_text_utils.substitute_query_params(query_info["query"], params)
       for params in query_info["params"][:_LIMIT.value]
   ]
   query_instances = [

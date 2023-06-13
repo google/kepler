@@ -25,6 +25,7 @@ from typing import Any, List, Optional, Tuple
 
 from kepler.data_management import database_simulator
 from kepler.training_data_collection_pipeline import pg_execute_training_data_queries
+from kepler.training_data_collection_pipeline import query_utils
 from kepler.training_data_collection_pipeline import test_util
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -93,13 +94,17 @@ class QueryExecution:
 
 
 def _execute_hinted_query(
-    query: str, params: List[Any],
-    timeout_ms: Optional[float]) -> Tuple[Optional[float], Optional[int]]:
+    query_manager: Optional[query_utils.QueryManager],
+    query: str,
+    params: List[Any],
+    timeout_ms: Optional[float],
+) -> Tuple[Optional[float], Optional[int]]:
   """Executes a hinted query in which the parameter contains the latencies.
 
   The plan index is extracted from the hint name, of the form hint{plan_index}.
 
   Args:
+    query_manager: For compatibility with other execution APIs.
     query: Hinted SQL query template string with 0 or more parameters provided
       in the form of @param#, starting with 0.
     params: List of parameter values to substitute into the query. The ith
@@ -112,6 +117,7 @@ def _execute_hinted_query(
         out.
       2. 1, simulating that this query always returns rows.
   """
+  del query_manager
   plan_idx = int(query.split(" ")[0][len("hint"):])
   latency = params[plan_idx]
 
@@ -187,9 +193,14 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
 
     self.query_executions = []
 
+    self.total_executions = 0
+
     def execute_query(
-        query: str, params: List[Any],
-        timeout_ms: Optional[float]) -> Tuple[Optional[float], Optional[int]]:
+        _: query_utils.QueryManager,
+        query: str,
+        params: List[Any],
+        timeout_ms: Optional[float],
+    ) -> Tuple[Optional[float], Optional[int]]:
       """Mocks execution by logging the requested query and returning a latency.
 
       The query latency changes every call and is boosted by a multiplier based
@@ -228,6 +239,14 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
       return total_latency, len(params[1])
 
     self.execute_query = execute_query
+
+  def execute_hinted_query(
+      self,
+      _: query_utils.QueryManager,
+      query: str, params: List[Any],
+      timeout_ms: Optional[float]) -> Tuple[Optional[float], Optional[int]]:
+    self.total_executions += 1
+    return _execute_hinted_query(None, query, params, timeout_ms)
 
   def _create_simple_execution_orders(
       self, default_plan_indices: List[int]) -> List[List[int]]:
@@ -322,6 +341,9 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     for expected_timeout, (key, plan_index) in zip(
         expected_timeouts, itertools.product(self.keys,
                                              range(len(hints_list)))):
+      if "default_timed_out" in result_map[key]["results"]:
+        self.assertTrue(expected_timeout)
+        continue
       plan_entry = result_map[key]["results"][plan_index]
       self.assertLen(plan_entry, iterations)
       for iteration_entry in plan_entry:
@@ -331,6 +353,50 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
         else:
           self.assertNotIn("timed_out", iteration_entry)
           self.assertIn("duration_ms", iteration_entry)
+
+  def test_batch_execution(self):
+    """Verifies if checkpoint fn is not provided, results are returned.
+    """
+    results_key = "duration_ms"
+    results, _ = pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
+        query_id=test_util.TEST_QUERY_ID,
+        templates=self.templates,
+        plan_hints=self.hints,
+        iterations=1,
+        batch_size=1,
+        skip_indices=[],
+        query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
+        query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
+        query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
+        execute_query_fn=self.execute_query,
+        results_key=results_key,
+        checkpoint_results_fn=None
+    )
+    self.checkpoint_results(test_util.TEST_QUERY_ID,
+                            {test_util.TEST_QUERY_ID: results}, False)
+    self.checkpoint_results(test_util.TEST_QUERY_ID,
+                            {test_util.TEST_QUERY_ID: {}}, True)
+
+    self._verify_query_executions(
+        iterations=1, params=self.params)
+
+    keys = self.keys
+    defaults = [
+        int(value["plan_index"])
+        for value in self.values[test_util.TEST_QUERY_ID]
+    ]
+    execution_orders = self._create_simple_execution_orders(defaults)
+    rows = [len(params[1]) for params in self.params]
+    self._verify_results(
+        iterations=1,
+        expected_checkpoint_count=1,
+        keys_per_checkpoint=[keys],
+        defaults_per_checkpoint=[defaults],
+        execution_orders_per_checkpoint=[execution_orders],
+        rows_per_checkpoint=[rows],
+        results_key=results_key)
 
   @parameterized.named_parameters(
       dict(testcase_name="basic", iterations=1, limit=None),
@@ -348,20 +414,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     """
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=limit,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=limit,
+    )
 
     self._verify_query_executions(
         iterations=iterations, params=self.params[:limit])
@@ -399,20 +467,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     """
     results_key = "results"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=1,
         batch_size=batch_size,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     self._verify_query_executions(iterations=1, params=self.params)
 
@@ -471,20 +541,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     iterations = 2
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=skip_indices,
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     defaults = [
         int(value["plan_index"])
@@ -506,20 +578,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     """Verifies that the timeout_ms is set correctly per parameter."""
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=5,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     # The timeout_ms will be the median execution time per parameter.
     self.assertLen(self.results, 1)
@@ -545,20 +619,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     iterations = 5
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=1,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     result_map = self.results[0][test_util.TEST_QUERY_ID]
     self.assertEqual(len(result_map), len(self.keys))
@@ -575,28 +651,28 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     iterations = 5
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
-        query_timeout_max_ms=_QUERY_TIMEOUT_MIN_MS,
+        query_timeout_max_ms=_QUERY_TIMEOUT_MIN_MS * 100,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     result_map = self.results[0][test_util.TEST_QUERY_ID]
     self.assertEqual(len(result_map), len(self.keys))
-    # The default plan execution never times out by construction. Everything
-    # else will timeout with a low query timeout max.
     self._verify_timeouts(
         iterations=iterations,
-        expected_timeouts=[False, True, True, False, False, True])
+        expected_timeouts=[False, True, True, True, False, True])
 
   def test_timeouts_high_query_timeout_min(self):
     """Verifies that raising the query timeout min removes timeouts."""
@@ -604,20 +680,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     iterations = 5
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=1,
         query_timeout_min_ms=_QUERY_TIMEOUT_MAX_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=self.execute_query,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     result_map = self.results[0][test_util.TEST_QUERY_ID]
     self.assertEqual(len(result_map), len(self.keys))
@@ -671,6 +749,7 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     # _QUERY_TIMEOUT_MULTIPLIER=10, then minimum_speedup_multiplier needs to be
     # 20 to halve the default execution time in the timeout computation.
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
         parameter_values={test_util.TEST_QUERY_ID: param_values},
@@ -685,7 +764,8 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
         execute_query_fn=_execute_hinted_query,
         checkpoint_results_fn=self.checkpoint_results,
         results_key=results_key,
-        query_timeout_minimum_speedup_multiplier=minimum_speedup_multiplier)
+        query_timeout_minimum_speedup_multiplier=minimum_speedup_multiplier,
+    )
 
     result_map = self.results[0][test_util.TEST_QUERY_ID]
     self.assertLen(result_map, 1)
@@ -702,25 +782,83 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     iterations = 3
     results_key = "test"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=self.hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=execute_query_without_rows,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     result_map = self.results[0][test_util.TEST_QUERY_ID]
     self.assertLen(result_map, 3)
     for results in result_map.values():
       self.assertIsNone(results["rows"])
+
+  @parameterized.parameters(
+      (2, 0),
+      (2, 1),
+      (2, 3),
+      (4, 0),
+      (4, 2),
+  )
+  def test_resume_from_previous_results(self, num_initial_parameters: int,
+                                        num_reexecute_params: int):
+    """Tests resuming execution."""
+    results_key = "duration_ms"
+    def execute_parameters(parameter_values,
+                           previous_results=None,
+                           previous_metadata=None):
+      pg_execute_training_data_queries.execute_training_data_queries(
+          batch_index=0,
+          query_id=test_util.TEST_QUERY_ID,
+          templates=self.templates,
+          parameter_values={
+              test_util.TEST_QUERY_ID: parameter_values},
+          plan_hints={test_util.TEST_QUERY_ID: _PARAM_HINTS},
+          iterations=2,
+          batch_size=100,
+          limit=None,
+          skip_indices=[],
+          query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
+          query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
+          query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
+          execute_query_fn=self.execute_hinted_query,
+          checkpoint_results_fn=self.checkpoint_results,
+          results_key=results_key,
+          previous_results=previous_results,
+          previous_metadata=previous_metadata,
+          num_reexecute_params=num_reexecute_params,
+          seed=20)
+
+    execute_parameters(_PARAM_VALUES[:num_initial_parameters])
+
+    self.assertLen(self.results, 1)
+    execution_results = self.results[0][test_util.TEST_QUERY_ID]
+    self.assertLen(execution_results, num_initial_parameters)
+    self.assertEqual(self.total_executions, 2 * 3 * num_initial_parameters)
+
+    # Execute all parameters, simulating a restart/resume.
+    execute_parameters(_PARAM_VALUES,
+                       self.results[0][test_util.TEST_QUERY_ID],
+                       {"plan_cover": [0, 1, 2]})
+
+    self.assertLen(self.results, 2)
+    execution_results = self.results[1][test_util.TEST_QUERY_ID]
+    self.assertLen(execution_results, len(_PARAM_VALUES))
+
+    num_reexecuted = min(num_reexecute_params, num_initial_parameters)
+    self.assertEqual(self.total_executions,
+                     2 * 3 * (len(_PARAM_VALUES) + num_reexecuted))
 
   def test_adaptive_timeouts(self):
     """Verifies adaptive timeouts based on fast optimal execution times.
@@ -762,8 +900,11 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     first_execution_check = set()
 
     def execute_query_adaptive_mock(
-        query: str, params: List[Any],
-        timeout_ms: Optional[float]) -> Tuple[Optional[float], Optional[int]]:
+        _: query_utils.QueryManager,
+        query: str,
+        params: List[Any],
+        timeout_ms: Optional[float],
+    ) -> Tuple[Optional[float], Optional[int]]:
       if params != self.params[0]:
         return 50, 500
 
@@ -779,20 +920,22 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
       return plan_bias, len(params[1])
 
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values=self.values,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values=self.values,
         plan_hints=hints,
         iterations=iterations,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
         query_timeout_max_ms=_QUERY_TIMEOUT_MAX_MS,
         execute_query_fn=execute_query_adaptive_mock,
         checkpoint_results_fn=self.checkpoint_results,
-        results_key=results_key)
+        results_key=results_key,
+        limit=None,
+    )
 
     keys = [
         "####".join([str(element)
@@ -1088,13 +1231,13 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     """
     results_key = "duration_ms"
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values={test_util.TEST_QUERY_ID: _PARAM_VALUES},
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values={test_util.TEST_QUERY_ID: _PARAM_VALUES},
         plan_hints={test_util.TEST_QUERY_ID: _PARAM_HINTS},
         iterations=2,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
@@ -1102,13 +1245,15 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
         execute_query_fn=_execute_hinted_query,
         checkpoint_results_fn=self.checkpoint_results,
         results_key=results_key,
+        limit=None,
         num_initial_default_executions=num_initial_default_executions,
         slowest_default_top_k=slowest_default_top_k,
         slowest_default_sample_size=slowest_default_sample_size,
         plan_cover_num_params=None,
         near_optimal_threshold=None,
         num_params_threshold=None,
-        seed=20)
+        seed=20,
+    )
 
     self.assertLen(self.results, 1)
     execution_results = self.results[0][test_util.TEST_QUERY_ID]
@@ -1161,13 +1306,13 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     results_key = "duration_ms"
     reordered_values = [_PARAM_VALUES[i] for i in params_reorder]
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
+        parameter_values={test_util.TEST_QUERY_ID: reordered_values},
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
-        parameter_values={test_util.TEST_QUERY_ID: reordered_values},
         plan_hints={test_util.TEST_QUERY_ID: _PARAM_HINTS},
         iterations=2,
         batch_size=100,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=_QUERY_TIMEOUT_MULTIPLIER,
         query_timeout_min_ms=_QUERY_TIMEOUT_MIN_MS,
@@ -1175,13 +1320,15 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
         execute_query_fn=_execute_hinted_query,
         checkpoint_results_fn=self.checkpoint_results,
         results_key=results_key,
+        limit=None,
         num_initial_default_executions=None,
         slowest_default_top_k=None,
         slowest_default_sample_size=None,
         plan_cover_num_params=plan_cover_num_params,
         near_optimal_threshold=1.05,
         num_params_threshold=0.99,
-        seed=20)
+        seed=20,
+    )
 
     self.assertLen(self.results, 1)
     execution_results = self.results[0][test_util.TEST_QUERY_ID]
@@ -1246,6 +1393,7 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
     # to induce time outs in the execution data to test the effect on plan
     # available for the plan cover computation.
     pg_execute_training_data_queries.execute_training_data_queries(
+        batch_index=0,
         query_id=test_util.TEST_QUERY_ID,
         templates=self.templates,
         parameter_values={test_util.TEST_QUERY_ID: param_values},
@@ -1267,7 +1415,8 @@ class PgExecuteTrainingDataQueriesTest(parameterized.TestCase):
         near_optimal_threshold=1.05,
         num_params_threshold=0.99,
         query_timeout_minimum_speedup_multiplier=minimum_speedup_multiplier,
-        seed=20)
+        seed=20,
+    )
 
     self.assertLen(self.metadata, 1)
     self.assertEqual(

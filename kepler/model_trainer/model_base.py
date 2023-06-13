@@ -17,11 +17,13 @@
 
 Contains:
   - ModelConfig class for specifying model architectures and hyperparams.
-  - ModelBase class as an abstract base class for any Kepler model.
+  - ModelBase class as an abstract base class for training any Kepler model.
+  - ModelPredictorBase class as an abstract base class for providing
+    predictions using a trained model.
 """
 import abc
 import dataclasses
-from typing import Any, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -29,6 +31,31 @@ import tensorflow as tf
 from kepler.model_trainer import trainer_util
 
 JSON = Any
+
+
+def prepare_input_param(
+    param: Any, predicate: Any, tflite_mode: bool
+) -> np.ndarray:
+  """Casts and preprocesses input parameter(s).
+
+  Args:
+    param: List, array, or single parameter value.
+    predicate: Predicate metadata.
+    tflite_mode: Whether we are doing tflite inference or not.
+
+  Returns:
+    Preprocessed parameter(s).
+  """
+  np_type = trainer_util.get_np_type(predicate["data_type"])
+  transform = trainer_util.get_predicate_transform(predicate)
+  if type(param) in [np.ndarray, list]:
+    param = np.array(list(map(transform, param)))
+  else:
+    param = transform(param)
+  casted_param = np.array(np.atleast_1d(param)).astype(np_type)
+  if tflite_mode:
+    casted_param = np.atleast_2d(casted_param)
+  return casted_param
 
 
 @dataclasses.dataclass(frozen=True)
@@ -43,6 +70,8 @@ class ModelConfig():
   activation: str
   loss: Any  # Loss can be custom function or string.
   metrics: List[Any]
+  spectral_norm_multiplier: float = 1.0
+  num_gp_random_features: int = 128
 
 
 def _apply_preprocessing_layer(
@@ -133,8 +162,7 @@ class ModelBase(metaclass=abc.ABCMeta):
   of varying types (str, int, float), as well as multiple ways to preprocess
   each type, e.g. normalization and embedding.
 
-  This class also contains abstract methods for performing model training,
-  inference, prediction, etc.
+  This class contains abstract methods for performing model training.
   """
 
   def __init__(self, metadata: JSON,
@@ -175,22 +203,6 @@ class ModelBase(metaclass=abc.ABCMeta):
     self._model_config = model_config
     self._preprocessing_config = preprocessing_config
 
-  def _cast_inputs_np_type(self, params: List[np.ndarray]) -> List[np.ndarray]:
-    """Casts np inputs to proper types to avoid tf 2 casting errors.
-
-    This seems to only be necessary in tf 2 eager execution.
-
-    Args:
-      params: Inputs to model inference.
-
-    Returns:
-      Casted version of inputs.
-    """
-    return [
-        feature.astype(trainer_util.get_np_type(param_data["data_type"]))
-        for feature, param_data in zip(params, self._predicate_metadata)
-    ]
-
   def _construct_preprocessing_layer(self) -> tf.keras.layers.Layer:  # pytype: disable=invalid-annotation  # typed-keras
     """Constructs input layer and preprocessing layer.
 
@@ -225,19 +237,25 @@ class ModelBase(metaclass=abc.ABCMeta):
     """Get keras model."""
     raise NotImplementedError
 
-  @abc.abstractmethod
-  def _get_model_predictions_helper(
-      self, params: List[np.ndarray]) -> np.ndarray:
-    """Get predicted best plans by model index."""
-    raise NotImplementedError
+
+class ModelPredictorBase(metaclass=abc.ABCMeta):
+  """Abstract base for classes that implement inference for a Kepler model."""
 
   @abc.abstractmethod
-  def get_model_outputs(self, params: List[np.ndarray]) -> np.ndarray:
-    """Performs forward inference."""
-    raise NotImplementedError
+  def predict(
+      self, params: List[Any]
+  ) -> Tuple[np.ndarray, Optional[Dict[str, Any]]]:
+    """Returns the predicted plan id from the model.
 
-  def get_model_predictions(
-      self, params: List[np.ndarray]) -> np.ndarray:
-    """Get plan ids corresponding to predicted best plans."""
-    return np.array(list(map(lambda x: self._model_index_to_plan_id[x],
-                             self._get_model_predictions_helper(params))))
+    Args:
+      params: Inputs to model inference.
+
+    Returns:
+      A tuple containing:
+        1. Array of plan ids predicted to give the best latency by the model, or
+           None if the model abstains from making a prediction due to low
+           confidence.
+        2. An optional dictionary containing predictor-specific auxiliary
+           values.
+    """
+    raise NotImplementedError

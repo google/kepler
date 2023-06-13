@@ -9,29 +9,29 @@ py_library(
     srcs = ["query_utils.py"],
     srcs_version = "PY3",
     deps = [
-        ":utils",
+        ":query_text_utils",
         # Implicit absl.logging dependency.
         # Implicit psycopg2 dependency
     ],
 )
 
 py_library(
-    name = "utils",
-    srcs = ["utils.py"],
+    name = "query_text_utils",
+    srcs = ["query_text_utils.py"],
     srcs_version = "PY3",
     deps = [],
 )
 
 py_test(
-    name = "utils_test",
-    srcs = ["utils_test.py"],
+    name = "query_text_utils_test",
+    srcs = ["query_text_utils_test.py"],
     python_version = "PY3",
     tags = [
         "notap",
     ],
     deps = [
+        ":query_text_utils",
         ":test_util",
-        ":utils",
         # Implicit absl.testing dependency.
         # Implicit absl.parameterized dependency.
     ],
@@ -187,7 +187,8 @@ py_library(
     srcs = ["pg_execute_training_data_queries.py"],
     srcs_version = "PY3",
     deps = [
-        ":utils",
+        ":query_text_utils",
+        ":query_utils",
         "//kepler/data_management:database_simulator",
         # Implicit absl.app dependency.
         # Implicit absl.logging dependency.
@@ -201,6 +202,7 @@ py_test(
     python_version = "PY3",
     deps = [
         ":pg_execute_training_data_queries",
+        ":query_utils",
         ":test_util",
         "//kepler/data_management:database_simulator",
         # Implicit absl.testing dependency.
@@ -214,7 +216,23 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        ":main_utils",
         ":pg_execute_training_data_queries",
+        ":query_utils",
+        # Implicit absl.app dependency.
+        # Implicit absl.flags dependency.
+    ],
+)
+
+py_binary(
+    name = "pg_distributed_training_execution_main",
+    srcs = ["pg_distributed_training_execution_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":main_utils",
+        ":pg_execute_training_data_queries",
+        ":query_text_utils",
         ":query_utils",
         # Implicit absl.app dependency.
         # Implicit absl.flags dependency.
@@ -227,7 +245,7 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        ":utils",
+        ":query_text_utils",
         # Implicit gfile dependency.
         # Implicit absl.app dependency.
         # Implicit absl.flags dependency.
@@ -316,8 +334,8 @@ py_library(
     deps = [
         ":pg_plan_hint_extractor",
         ":query_plan_utils",
+        ":query_text_utils",
         ":query_utils",
-        ":utils",
     ],
 )
 
@@ -375,8 +393,8 @@ py_library(
     srcs = ["graph_tensor_builder.py"],
     srcs_version = "PY3",
     deps = [
+        ":query_text_utils",
         ":query_utils",
-        ":utils",
         "//pyglib:resources",
         "//kepler/data_management:database_simulator",
         "//kepler/data_management:workload",

@@ -161,6 +161,16 @@ class QueryManagerPostgresTest(parameterized.TestCase):
     self.assertGreater(latency, 0)
     self.assertEqual(rows, 2)
 
+  def test_execute_timed_local(self):
+    """Verifies retrieving execution latency for a query."""
+    latency, rows = self._query_manager.execute_timed_local(
+        "SELECT x, y FROM foo where y > 2"
+    )
+    self.assertIsNotNone(latency)
+    self.assertIsInstance(latency, float)
+    self.assertGreater(latency, 0)
+    self.assertEqual(rows, 2)
+
   def test_execute_timed_no_rows(self):
     """Verifies retrieving execution latency for a query."""
     latency, rows = self._query_manager.execute_timed(
@@ -170,10 +180,34 @@ class QueryManagerPostgresTest(parameterized.TestCase):
     self.assertGreater(latency, 0)
     self.assertEqual(rows, 0)
 
+  def test_execute_timed_local_no_rows(self):
+    """Verifies retrieving execution latency for a query."""
+    latency, rows = self._query_manager.execute_timed_local(
+        "SELECT x, y FROM foo where y > 2 and y < 1"
+    )
+    self.assertIsNotNone(latency)
+    self.assertIsInstance(latency, float)
+    self.assertGreater(latency, 0)
+    self.assertEqual(rows, 0)
+
   def test_execute_timed_timeout(self):
     """Verifies enforcement of query timeout."""
     latency, rows = self._query_manager.execute_timed(
         "SELECT pg_sleep(1)", timeout_ms=1)
+    self.assertIsNone(latency)
+    self.assertIsNone(rows)
+
+    # Check that the timeout has been reset.
+    latency, rows = self._query_manager.execute_timed("SELECT pg_sleep(1)")
+    self.assertIsNotNone(latency)
+    self.assertGreater(latency, 0)
+    self.assertEqual(rows, 1)
+
+  def test_execute_timed_local_timeout(self):
+    """Verifies enforcement of query timeout."""
+    latency, rows = self._query_manager.execute_timed_local(
+        "SELECT pg_sleep(1)", timeout_ms=1
+    )
     self.assertIsNone(latency)
     self.assertIsNone(rows)
 

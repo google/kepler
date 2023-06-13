@@ -15,11 +15,14 @@
 
 """Tests for multihead model."""
 
+import copy
 import numpy as np
 import tensorflow as tf
 
 from kepler.model_trainer import multihead_model
+from kepler.model_trainer import sngp_multihead_model
 from kepler.model_trainer import test_util
+from kepler.model_trainer import trainer_util
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -32,16 +35,27 @@ _MODEL_1 = multihead_model.MultiheadModel(
     test_util.TEST_METADATA_0, list(range(test_util.TEST_NUM_PLANS_1)),
     test_util.TEST_MODEL_CONFIG_1, test_util.TEST_PREPROCESSING_CONFIG_0)
 
+_MODEL_2 = sngp_multihead_model.SNGPMultiheadModel(
+    test_util.TEST_METADATA_0, list(range(test_util.TEST_NUM_PLANS_0)),
+    test_util.TEST_MODEL_CONFIG_0, test_util.TEST_PREPROCESSING_CONFIG_0)
+
+_MODEL_3 = sngp_multihead_model.SNGPMultiheadModel(
+    test_util.TEST_METADATA_0, list(range(test_util.TEST_NUM_PLANS_1)),
+    test_util.TEST_MODEL_CONFIG_1, test_util.TEST_PREPROCESSING_CONFIG_0)
+
 
 class MultiheadModelTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
       ("model0", _MODEL_0, test_util.TEST_NUM_PLANS_0),
-      ("model1", _MODEL_1, test_util.TEST_NUM_PLANS_1)
+      ("model1", _MODEL_1, test_util.TEST_NUM_PLANS_1),
+      ("model2", _MODEL_2, test_util.TEST_NUM_PLANS_0),
+      ("model3", _MODEL_3, test_util.TEST_NUM_PLANS_1)
   )
   def test_basic_training(self, model, num_plans):
     # Basic check that this model can train without raising errors.
-    x = test_util.TEST_INPUT_PARAMS_0
+    x = copy.deepcopy(test_util.TEST_INPUT_PARAMS_0)
+    trainer_util.apply_preprocessing(x, test_util.TEST_METADATA_0["predicates"])
     model.get_model().fit(x, np.zeros((4, num_plans)), epochs=1)
 
   @parameterized.named_parameters(
@@ -52,24 +66,10 @@ class MultiheadModelTest(parameterized.TestCase):
     self.assertEqual(int(model.get_model().output.shape[1]), num_plans)
 
   @parameterized.named_parameters(
-      ("model0", _MODEL_0, test_util.TEST_NUM_PLANS_0),
-      ("model1", _MODEL_1, test_util.TEST_NUM_PLANS_1)
-  )
-  def test_inference_dimensions(self, model, num_plans):
-    self.assertEqual(
-        model.get_model_outputs(test_util.TEST_INPUT_PARAMS_0).shape[1],
-        num_plans)
-
-  @parameterized.named_parameters(
-      ("model0", _MODEL_0),
-      ("model1", _MODEL_1)
-  )
-  def test_prediction_dimensions(self, model):
-    self.assertTrue(test_util.test_model_prediction_shape(model))
-
-  @parameterized.named_parameters(
       ("model0", _MODEL_0, tf.keras.activations.relu),
-      ("model1", _MODEL_1, tf.keras.activations.tanh)
+      ("model1", _MODEL_1, tf.keras.activations.tanh),
+      ("model2", _MODEL_2, tf.keras.activations.relu),
+      ("model3", _MODEL_3, tf.keras.activations.tanh)
   )
   def test_activations(self, model, activation):
     for layer in model.get_model().layers:
@@ -82,6 +82,10 @@ class MultiheadModelTest(parameterized.TestCase):
       ("model0", _MODEL_0, test_util.TEST_MODEL_CONFIG_0,
        test_util.TEST_NUM_PLANS_0),
       ("model1", _MODEL_1, test_util.TEST_MODEL_CONFIG_1,
+       test_util.TEST_NUM_PLANS_1),
+      ("model2", _MODEL_2, test_util.TEST_MODEL_CONFIG_0,
+       test_util.TEST_NUM_PLANS_0),
+      ("model3", _MODEL_3, test_util.TEST_MODEL_CONFIG_1,
        test_util.TEST_NUM_PLANS_1)
   )
   def test_layer_widths(self, model, model_config, num_plans):
@@ -94,7 +98,9 @@ class MultiheadModelTest(parameterized.TestCase):
 
   @parameterized.named_parameters(
       ("model0", _MODEL_0, test_util.TEST_MODEL_CONFIG_0),
-      ("model1", _MODEL_1, test_util.TEST_MODEL_CONFIG_1)
+      ("model1", _MODEL_1, test_util.TEST_MODEL_CONFIG_1),
+      ("model2", _MODEL_2, test_util.TEST_MODEL_CONFIG_0),
+      ("model3", _MODEL_3, test_util.TEST_MODEL_CONFIG_1)
   )
   def test_dropout_rates(self, model, model_config):
     for layer in model.get_model().layers:

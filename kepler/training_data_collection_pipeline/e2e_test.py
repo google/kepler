@@ -153,10 +153,13 @@ class E2ETest(parameterized.TestCase):
     # Step 3: Collect execution results.
     query_manager = query_utils.QueryManager(self._database_configuration)
 
-    def execute_query(query: str,
-                      params: List[Any],
-                      timeout_ms: Optional[int] = None
-                     ) -> Tuple[Optional[float], Optional[int]]:
+    def execute_query(
+        unused_query_manager: query_utils.QueryManager,
+        query: str,
+        params: List[Any],
+        timeout_ms: Optional[int] = None,
+    ) -> Tuple[Optional[float], Optional[int]]:
+      del unused_query_manager
       return query_manager.execute_timed(query, params, timeout_ms)
 
     execute_query_results_key = "duration_ms"
@@ -176,15 +179,15 @@ class E2ETest(parameterized.TestCase):
         execution_results = copy.deepcopy(results)
 
     pg_execute_training_data_queries.execute_training_data_queries(
-        query_id=test_util.TEST_QUERY_ID,
-        templates=query_templates,
+        batch_index=0,
         parameter_values={
             test_util.TEST_QUERY_ID: parameter_values_and_plan_indices
         },
+        query_id=test_util.TEST_QUERY_ID,
+        templates=query_templates,
         plan_hints={test_util.TEST_QUERY_ID: plan_hints},
         iterations=3,
         batch_size=2,
-        limit=None,
         skip_indices=[],
         query_timeout_multiplier=3,
         query_timeout_min_ms=30,
@@ -192,10 +195,12 @@ class E2ETest(parameterized.TestCase):
         execute_query_fn=execute_query,
         checkpoint_results_fn=checkpoint_results,
         results_key=execute_query_results_key,
+        limit=None,
         plan_cover_num_params=2,
         near_optimal_threshold=1.05,
-        num_params_threshold=.95,
-        query_timeout_minimum_speedup_multiplier=2)
+        num_params_threshold=0.95,
+        query_timeout_minimum_speedup_multiplier=2,
+    )
 
     self.assertLen(execution_results[test_util.TEST_QUERY_ID], parameter_count)
     self.assertLen(execution_metadata[test_util.TEST_QUERY_ID], 1)

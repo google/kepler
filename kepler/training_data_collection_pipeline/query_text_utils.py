@@ -15,7 +15,16 @@
 
 """Provides simple generic utils."""
 
-from typing import Any, Sequence
+from typing import Any, List, Sequence
+
+
+# TODO(b/199162711): Transition this script and downstream analysis scripts to a
+# structured format instead of using _NAME_DELIMITER.
+_NAME_DELIMITER = '####'
+
+
+def get_params_as_string(params: List[Any]) -> str:
+  return _NAME_DELIMITER.join([str(p) for p in params])
 
 
 def substitute_query_params(query: str, params: Sequence[Any]) -> str:

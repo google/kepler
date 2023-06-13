@@ -22,17 +22,14 @@ query templates, parameter values, and query plan hints.
 """
 
 import collections
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from absl import logging
 import numpy as np
 
 from kepler.data_management import database_simulator
-from kepler.training_data_collection_pipeline import utils
-
-# TODO(b/199162711): Transition this script and downstream analysis scripts to a
-# structured format instead of using _NAME_DELIMITER.
-_NAME_DELIMITER = "####"
+from kepler.training_data_collection_pipeline import query_text_utils
+from kepler.training_data_collection_pipeline import query_utils
 
 JSON = Any
 
@@ -43,13 +40,25 @@ def _has_timeout(execution_results: List[JSON]) -> bool:
   return any(["timed_out" in result for result in execution_results])
 
 
+# The distributed_query_manager is initialized per-process to open a database
+# connection exactly once per process when using a multiprocessing pool.
+distributed_query_manager = None
+
+
+def init_per_process_global_query_manager(
+    database_configuration: query_utils.DatabaseConfiguration,
+):
+  global distributed_query_manager
+  distributed_query_manager = query_utils.QueryManager(database_configuration)
+
+
 def _get_plan_to_near_optimal_params(
     results: JSON,
     results_key: str,
-    estimator: database_simulator.LatencyEstimator = database_simulator
-    .LatencyEstimator.MIN,
+    estimator: database_simulator.LatencyEstimator = database_simulator.LatencyEstimator.MIN,
     near_optimal_threshold: float = 1.01,
-    num_params_limit: Optional[int] = None) -> Dict[int, Set[int]]:
+    num_params_limit: Optional[int] = None,
+) -> Dict[int, Set[int]]:
   """Computes a mapping from plan index to params for which it is near optimal.
 
   Args:
@@ -190,8 +199,12 @@ class PlanExecutionOrderManager:
   def _reset_invariant_checker(self):
     self._plan_index_invariant = set(range(self._plan_count))
 
-  def add_execution(self, plan_index: int,
-                    execution_latency_ms: Optional[float]) -> None:
+  def clear_invariant_checker(self):
+    self._plan_index_invariant = set()
+
+  def add_execution(
+      self, plan_index: int, execution_latency_ms: Optional[float]
+  ) -> None:
     """Adds execution latency for the provided plan_index.
 
     An execution must be added exactly once per plan_index before calling
@@ -318,7 +331,9 @@ def _get_execution_latency(results: JSON, results_key: str,
 
 def _validate_inputs(num_initial_default_executions: Optional[int] = None,
                      slowest_default_top_k: Optional[int] = None,
-                     slowest_default_sample_size: Optional[int] = None) -> None:
+                     slowest_default_sample_size: Optional[int] = None,
+                     previous_results: Optional[Any] = None,
+                     previous_metadata: Optional[Any] = None) -> None:
   """Validate inputs for execute_training_data_queries.
 
   Args:
@@ -327,43 +342,61 @@ def _validate_inputs(num_initial_default_executions: Optional[int] = None,
     slowest_default_top_k: Specifies how many of the slowest parameters to
       sample from.
     slowest_default_sample_size: How many of the slowest k parameters to sample.
+    previous_results: Prior results to resume execution from.
+    previous_metadata: Prior metadata to resume execution from.
 
   Raises:
     ValueError: If there there are any inconsistencies in the parameter
-      reordering hyperparameters.
+      reordering hyperparameters or previous execution data.
   """
   if num_initial_default_executions is not None:
     if slowest_default_top_k is None or slowest_default_sample_size is None:
       raise ValueError(
-          "slowest_default_top_k and slowest_default_sample_size must be specified if num_initial_default_executions is specified."
+          "slowest_default_top_k and slowest_default_sample_size must be"
+          " specified if num_initial_default_executions is specified."
       )
     else:
       if slowest_default_top_k > num_initial_default_executions:
         raise ValueError(
-            "slowest_default_top_k cannot be greater than num_initial_default_executions."
+            "slowest_default_top_k cannot be greater than"
+            " num_initial_default_executions."
         )
       if slowest_default_sample_size > slowest_default_top_k:
         raise ValueError(
-            "slowest_default_sample_size cannot be greater than slowest_default_top_k."
+            "slowest_default_sample_size cannot be greater than"
+            " slowest_default_top_k."
         )
+
+  if (previous_results is not None) != (previous_metadata is not None):
+    raise ValueError(
+        "previous_results and previous_metadata must be provided together."
+    )
+  if previous_metadata is not None and "plan_cover" not in previous_metadata:
+    raise ValueError(
+        '"plan_cover" key missing from previous_metadata. If plan_cover'
+        " has not yet been computed, the entire execution needs to be rerun."
+    )
 
 
 def execute_training_data_queries(
+    batch_index: int,
+    parameter_values: Any,
     query_id: str,
     templates: Any,
-    parameter_values: Any,
     plan_hints: Any,
     iterations: int,
     batch_size: int,
-    limit: Union[int, None],
     skip_indices: List[int],
     query_timeout_multiplier: float,
     query_timeout_min_ms: int,
     query_timeout_max_ms: int,
-    execute_query_fn: Callable[[str, List[Any], Optional[int]],
-                               Tuple[Any, Optional[int]]],
-    checkpoint_results_fn: Callable[[str, Any, bool], None],
+    execute_query_fn: Callable[
+        [Optional[query_utils.QueryManager], str, List[Any], Optional[int]],
+        Tuple[Any, Optional[int]],
+    ],
+    checkpoint_results_fn: Optional[Callable[[str, Any, bool], None]],
     results_key: str,
+    limit: Optional[int] = None,
     num_initial_default_executions: Optional[int] = None,
     slowest_default_top_k: Optional[int] = None,
     slowest_default_sample_size: Optional[int] = None,
@@ -371,7 +404,13 @@ def execute_training_data_queries(
     near_optimal_threshold: Optional[float] = None,
     num_params_threshold: Optional[float] = None,
     query_timeout_minimum_speedup_multiplier: float = 1.,
-    seed: int = 0) -> None:
+    previous_results: Optional[Any] = None,
+    previous_metadata: Optional[Any] = None,
+    num_reexecute_params: int = 10,
+    seed: int = 0,
+    total_num_params: Optional[int] = None,
+    print_skips: bool = True,
+) -> Optional[Any]:
   """Executes SQL queries generated from parameters and all query plans.
 
   For each set of parameter values and each query plan hint, we execute a query
@@ -382,16 +421,17 @@ def execute_training_data_queries(
   a sample of parameters with high default execution latencies to the front.
 
   Args:
-    query_id: The query id for which to execute queries.
-    templates: A mapping from query id to the templatized SQL query text.
+    batch_index: The parameter offset index for the start of this batch. Only
+      useful during multithreaded execution; specify 0 for default behavior.
     parameter_values: A mapping from query id to all the parameter values to
       execute with for that query id.
+    query_id: The query id for which to execute queries.
+    templates: A mapping from query id to the templatized SQL query text.
     plan_hints: A mapping from query id to pg_hint_plan hints representing the
       set of query plans for execution.
     iterations: The number of times to execute the requested query.
     batch_size: The number of parameter_values to fully evaluate before calling
       checkpoint_results_fn.
-    limit: The number of parameter_values to gather execution data for.
     skip_indices: List of plan indices to skip.
     query_timeout_multiplier: This factor is multiplied by the slowest execution
       time of the default query plan to provide an upper bound on the query
@@ -413,6 +453,7 @@ def execute_training_data_queries(
       expected to accept the query_id, a JSON object of results, and bool flag
       specifying whether the results are data or metadata.
     results_key: A string corresponding to the key that maps to the result data.
+    limit: The number of parameter_values to gather execution data for.
     num_initial_default_executions: How many parameters to initially execute
       default plans for to determine the tail latency parameters.
     slowest_default_top_k: Specifies how many of the slowest parameters to
@@ -429,18 +470,32 @@ def execute_training_data_queries(
       speed up expected from a candidate plan to be considered an alternative to
       the default. Plans that do not provide this speed up are considered timed
       out.
+    previous_results: Prior results to resume execution from.
+    previous_metadata: Prior metadata to resume execution from.
+    num_reexecute_params: Number of query instances to reexecute on resume.
     seed: The random seed to use.
+    total_num_params: The total number of parameters to process. Only useful
+      during multithreaded execution.
+    print_skips: Whether to log skipped plan results.
+
+  Returns:
+    The results and metadata if checkpoint_results is not specified.
   """
   _validate_inputs(num_initial_default_executions, slowest_default_top_k,
-                   slowest_default_sample_size)
+                   slowest_default_sample_size, previous_results,
+                   previous_metadata)
+
+  # Default to using global query manager. Otherwise, specify
+  # query manager in definition of execute_query_fn.
+  query_manager = distributed_query_manager
 
   np.random.seed(seed)
-  results = {}
-  metadata = {}
+  results = previous_results or {}
+  metadata = previous_metadata or {}
 
   def get_hinted_query(plan_index) -> str:
     current_plan_hints = plan_hints[query_id][plan_index]
-    hinted_query = utils.get_hinted_query(
+    hinted_query = query_text_utils.get_hinted_query(
         query=templates[query_id]["query"], hints=current_plan_hints["hints"])
     return hinted_query
 
@@ -477,8 +532,11 @@ def execute_training_data_queries(
         # optimal plan for this set of parameters, we do not need to spend
         # time completing the full execution.
         timeout_ms = default_timeout_ms if i == 0 else optimal_timeout_ms
+        timeout_ms = timeout_ms or query_timeout_max_ms
 
-        result, rows = execute_query_fn(hinted_query, params, timeout_ms)
+        result, rows = execute_query_fn(
+            query_manager, hinted_query, params, timeout_ms
+        )
         if result:
           execution_results.append({results_key: result})
           results[params_as_string]["rows"].append(rows)
@@ -488,9 +546,16 @@ def execute_training_data_queries(
     results[params_as_string]["results"][plan_index] = execution_results
 
     # Log the final execution to give a pulse of how things are going.
-    logging.info("%d/%d: %s,%d,%s %s ms", param_index + 1, len(param_sets),
-                 query_id, plan_index, params_as_string,
-                 str(execution_results[-1]))
+    if print_skips or "skipped" not in execution_results[-1]:
+      logging.info(
+          "%d/%d: %s,%d,%s %s ms",
+          batch_index + param_index + 1,
+          total_num_params or len(param_sets),
+          query_id,
+          plan_index,
+          params_as_string,
+          str(execution_results[-1]),
+      )
 
   plan_count = len(plan_hints[query_id])
 
@@ -508,7 +573,7 @@ def execute_training_data_queries(
 
       default_plan_index = int(params["plan_index"])
       params = params["params"]
-      params_as_string = _NAME_DELIMITER.join([str(p) for p in params])
+      params_as_string = query_text_utils.get_params_as_string(params)
       default_results[params_as_string] = collections.defaultdict(dict)
       default_results[params_as_string]["default"] = default_plan_index
       default_results[params_as_string]["results"] = [None] * plan_count
@@ -530,14 +595,7 @@ def execute_training_data_queries(
       default_latencies.append((param_index, min_default_latency))
     return default_results, default_latencies
 
-  # Maybe execute default plans to move slowest plans to the front.
-  # Use separate results to simplify JSON checkpointing.
-  default_results = {}
-  default_latencies = []
-  reordered_param_sets = param_sets
-  if num_initial_default_executions is not None:
-    default_results, default_latencies = execute_default_plans_only()
-
+  def get_reordered_param_sets(default_latencies):
     # Reorder param sets and sample from top-k slowest default plans.
     slowest_params = sorted(default_latencies, key=lambda x: x[1], reverse=True)
     sample_range = min(len(param_sets), slowest_default_top_k)
@@ -550,9 +608,45 @@ def execute_training_data_queries(
     reorder = sampled_indices + [
         i for i in range(len(param_sets)) if i not in sampled_indices
     ]
-    reordered_param_sets = [param_sets[i] for i in reorder]
+    return [param_sets[i] for i in reorder]
 
+  # Maybe execute default plans to move slowest plans to the front.
+  # Use separate results to simplify JSON checkpointing.
   plan_cover = None
+  default_results = {}
+  default_latencies = []
+  reordered_param_sets = param_sets
+  reexecute_param_strings = []
+  if previous_results and previous_metadata:
+    # Reconstruct reordered param sets.
+    param_string_to_param_set = {
+        query_text_utils.get_params_as_string(params["params"]): params
+        for params in param_sets
+    }
+
+    if num_reexecute_params:
+      reexecute_param_strings = list(previous_results.keys())[
+          -num_reexecute_params:
+      ]
+    metadata["reexecuted_params"] = reexecute_param_strings
+
+    executed_params = [
+        param_string_to_param_set[param_string]
+        for param_string in previous_results.keys()
+    ]
+    unexecuted_params = [
+        params
+        for params in param_sets
+        if query_text_utils.get_params_as_string(params["params"])
+        not in previous_results
+    ]
+    reordered_param_sets = executed_params + unexecuted_params
+    plan_cover = previous_metadata["plan_cover"]
+
+  elif num_initial_default_executions is not None:
+    default_results, default_latencies = execute_default_plans_only()
+    reordered_param_sets = get_reordered_param_sets(default_latencies)
+
   execution_order_manager = PlanExecutionOrderManager(plan_count=plan_count)
   for param_index, params in enumerate(reordered_param_sets):
     if limit and param_index >= limit:
@@ -560,9 +654,15 @@ def execute_training_data_queries(
 
     default_plan_index = int(params["plan_index"])
     params = params["params"]
-    params_as_string = _NAME_DELIMITER.join([str(p) for p in params])
+    params_as_string = query_text_utils.get_params_as_string(params)
 
     logging.info("Parameter: %s", params_as_string)
+
+    if params_as_string in reexecute_param_strings:
+      logging.info("Reexecuting %s", params_as_string)
+    elif params_as_string in results:
+      logging.info("Already executed parameter")
+      continue
 
     results[params_as_string] = collections.defaultdict(dict)
     results[params_as_string]["default"] = default_plan_index
@@ -580,7 +680,7 @@ def execute_training_data_queries(
     # compute a minimal pruned plan set, such that each parameter is likely to
     # still have a near-optimal plan. From this iteration onwards, only these
     # plans and the default plans will be executed.
-    if param_index == plan_cover_num_params:
+    if param_index == plan_cover_num_params and not plan_cover:
       plan_cover = get_greedy_plan_cover(
           results,
           results_key,
@@ -634,6 +734,15 @@ def execute_training_data_queries(
       candidate_timeout_ms = compute_timeout(execution_latency_ms, has_timeout)
 
       if plan_index == default_plan_index:
+        # If default plan times out, skip this query instance.
+        if has_timeout:
+          results[params_as_string] = {
+              "results": {"default_timed_out": query_timeout_max_ms},
+              "rows": [-1],
+          }
+          execution_order_manager.clear_invariant_checker()
+          break
+
         assert optimal_timeout_ms is None
         assert default_timeout_ms is None
         default_timeout_ms = candidate_timeout_ms
@@ -658,9 +767,12 @@ def execute_training_data_queries(
         f"number of rows: {results[params_as_string]}")
     results[params_as_string]["rows"] = next(iter(rows_set))
 
-    if len(results) % batch_size == 0:
+    if len(results) % batch_size == 0 and checkpoint_results_fn:
       checkpoint_results_fn(query_id, {query_id: results}, False)
       checkpoint_results_fn(query_id, {query_id: metadata}, True)
 
-  checkpoint_results_fn(query_id, {query_id: results}, False)
-  checkpoint_results_fn(query_id, {query_id: metadata}, True)
+  if checkpoint_results_fn:
+    checkpoint_results_fn(query_id, {query_id: results}, False)
+    checkpoint_results_fn(query_id, {query_id: metadata}, True)
+  else:
+    return results, metadata

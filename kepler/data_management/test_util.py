@@ -22,18 +22,21 @@ QUERY_METADATA = {
         "query":
             "SELECT * FROM t as t WHERE a=@param0 AND b=@param1 AND c=@param2",
         "predicates": [{
+            "table": "t",
             "alias": "t",
             "column": "a",
             "operator": "=",
             "data_type": "text",
             "distinct_values": ["first"]
         }, {
+            "table": "t",
             "alias": "t",
             "column": "b",
             "operator": "=",
             "data_type": "text",
             "distinct_values": ["a", "b"]
         }, {
+            "table": "t",
             "alias": "t",
             "column": "c",
             "operator": "=",
@@ -41,11 +44,14 @@ QUERY_METADATA = {
             "min": 0,
             "max": 2
         }, {
+            "table": "t",
             "alias": "t",
             "column": "d",
             "operator": "=",
             "data_type": "float",
-            "preprocess_type": "to_timestamp"
+            "preprocess_type": "to_timestamp",
+            "mean": 0,
+            "variance": 1
         }]
     }
 }
@@ -168,7 +174,7 @@ QUERY_EXECUTION_DATA = {
             "default":
                 2,
             "results": [[{
-                "timed_out": 31
+                "duration_ms": 50
             }, {
                 "timed_out": 31
             }, {
@@ -188,6 +194,12 @@ QUERY_EXECUTION_DATA = {
             }], [{
                 "skipped": True
             }]]
+        },
+        "first####c####0####1975-01-05": {
+            "default": 2,
+            "results": {
+                "default_timed_out": 3600
+            }
         }
     }
 }

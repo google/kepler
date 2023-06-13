@@ -28,8 +28,8 @@ import multiprocessing
 from typing import Any, Dict, List, Optional, Tuple
 
 from kepler.training_data_collection_pipeline import pg_plan_hint_extractor
+from kepler.training_data_collection_pipeline import query_text_utils
 from kepler.training_data_collection_pipeline import query_utils
-from kepler.training_data_collection_pipeline import utils
 
 # Typing aliases.
 JSON = Any
@@ -283,7 +283,7 @@ def _collect_explain_plans_helper(
   params_results = {}
   params_results["results"] = []
   for hint in plan_hints:
-    hinted_query = utils.get_hinted_query(
+    hinted_query = query_text_utils.get_hinted_query(
         query=query, hints=hint["hints"])
     query_plan = query_manager.get_query_plan(hinted_query, params)
     if extract_function == ExplainExtractionFunction.TOTAL_COSTS:

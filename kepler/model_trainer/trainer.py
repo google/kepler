@@ -316,7 +316,7 @@ class RegressionTrainer(TrainerBase):
     query_execution_df = query_execution_df.drop(
         set(query_execution_df.columns).difference(set(column_names)), axis=1)
     # Keep one row per parameter.
-    query_execution_df.drop_duplicates(inplace=True)
+    query_execution_df = query_execution_df.iloc[::num_plans]
     assert len(query_execution_df) == len(targets)
 
     # Split the columns since they may be different types and need to be passed
@@ -373,12 +373,8 @@ class NearOptimalClassificationTrainer(TrainerBase):
     # Apply preprocessing to parameter columns.
     self.apply_preprocessing(query_execution_df)
 
-    # Get the list of column names and cast any required columns to the
-    # appropriate type.
-    column_names = self.get_parameter_column_names()
-    query_execution_df = trainer_util.cast_df_columns(query_execution_df,
-                                                      self._predicate_metadata)
     # Default plans may be duplicated.
+    column_names = self.get_parameter_column_names()
     query_execution_df.drop_duplicates(column_names + ["plan_id"], inplace=True)
 
     # If default relative, extract default latencies and then prune
@@ -405,7 +401,9 @@ class NearOptimalClassificationTrainer(TrainerBase):
 
     # Split the columns since they may be different types and need to be passed
     # into the model as multiple inputs.
-    param_values = grouped.sum().index.to_frame()
+    param_values = trainer_util.cast_df_columns(
+        grouped.sum().index.to_frame(), self._predicate_metadata
+    )
     feature_values = [
         np.array(param_values.pop(n)) for n in param_values.columns
     ]

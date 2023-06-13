@@ -85,10 +85,10 @@ class DatabaseSimulatorTest(parameterized.TestCase):
         plan_id=0,
         parameters=test_util.PARAMETERS_POOL[4])
     latency, is_default = simulator.execute_timed(planned_query_non_default)
-    self.assertEqual(latency, 31.)
+    self.assertEqual(latency, 50.)
     self.assertFalse(is_default)
     self.assertEqual(simulator.execution_count, 1)
-    self.assertEqual(simulator.execution_cost_ms, 31)
+    self.assertEqual(simulator.execution_cost_ms, 50)
 
     planned_query_default = database_simulator.PlannedQuery(
         query_id=test_util.TEST_QUERY_ID,
@@ -98,7 +98,7 @@ class DatabaseSimulatorTest(parameterized.TestCase):
     self.assertEqual(latency, 1)
     self.assertTrue(is_default)
     self.assertEqual(simulator.execution_count, 2)
-    self.assertEqual(simulator.execution_cost_ms, 32)
+    self.assertEqual(simulator.execution_cost_ms, 51)
 
   def test_execute_explain(self):
     """Verifies query plan explain total cost look-up."""

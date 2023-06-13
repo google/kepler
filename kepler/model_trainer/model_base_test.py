@@ -15,40 +15,11 @@
 
 """Tests for model_base."""
 
-from typing import Any, List, Mapping, Optional, Sequence
-
-import numpy as np
 import tensorflow as tf
 
-from kepler.model_trainer import model_base
 from kepler.model_trainer import test_util
 from absl.testing import absltest
 from absl.testing import parameterized
-
-
-class ConcreteModelBase(model_base.ModelBase):
-  """Make non-abstract class for testing."""
-  _inputs: List[tf.keras.Input]  # pytype: disable=invalid-annotation  # typed-keras
-
-  def __init__(self, metadata: Mapping[str, Any], plan_ids: List[int],
-               model_config: Optional[model_base.ModelConfig],
-               preprocessing_config: Sequence[Mapping[str, Any]]):
-    super().__init__(metadata, plan_ids, model_config, preprocessing_config)
-
-    self.preprocessing_layer = self._construct_preprocessing_layer()
-    self._model = tf.keras.models.Model(
-        inputs=self._inputs, outputs=self.preprocessing_layer)
-
-  def get_model(self):
-    return self._model
-
-  def _get_model_predictions_helper(self, features):
-    """Get predicted best plans."""
-    return np.array([0] * len(features[0]))
-
-  def get_model_outputs(self, features):
-    """Perform forward inference."""
-    raise NotImplementedError
 
 
 class ModelBaseTest(parameterized.TestCase):
@@ -56,13 +27,17 @@ class ModelBaseTest(parameterized.TestCase):
   def setUp(self):
     super().setUp()
     # ModelBase does not use any model configs nor num_plans.
-    self.base_model = ConcreteModelBase(test_util.TEST_METADATA_0, [], None,
-                                        test_util.TEST_PREPROCESSING_CONFIG_0)
+    self.base_model = test_util.ConcreteModelBase(
+        test_util.TEST_METADATA_0,
+        [],
+        None,
+        test_util.TEST_PREPROCESSING_CONFIG_0,
+    )
     self.model = self.base_model.get_model()
 
   def test_preprocessing_dimension(self):
     self.assertEqual(self.base_model.preprocessing_layer.dtype, tf.float32)
-    self.assertEqual(int(self.base_model.preprocessing_layer.shape[1]), 141)
+    self.assertEqual(int(self.base_model.preprocessing_layer.shape[1]), 142)
 
   def test_input_layers(self):
     # Inputs should all be dimension 1.
@@ -98,18 +73,6 @@ class ModelBaseTest(parameterized.TestCase):
     layer = self.model.get_layer(layer_name)
     self.assertEqual(layer.mean, mean)
     self.assertEqual(layer.variance, variance)
-
-  @parameterized.named_parameters(
-      ("case0", [0, 1], [0]),
-      ("case1", [1, 2], [1]),
-  )
-  def test_get_model_predictions(self, plan_ids, expected_outputs):
-    """Tests that we get the right plan ids."""
-    model = ConcreteModelBase(test_util.TEST_METADATA_0, plan_ids, None,
-                              test_util.TEST_PREPROCESSING_CONFIG_0)
-    inputs = [np.zeros(1)]
-    outputs = model.get_model_predictions(inputs)
-    self.assertEqual(outputs, expected_outputs)
 
 
 if __name__ == "__main__":

@@ -27,8 +27,8 @@ import tensorflow_gnn as tfgnn
 
 from kepler.data_management import database_simulator
 from kepler.data_management import workload
+from kepler.training_data_collection_pipeline import query_text_utils
 from kepler.training_data_collection_pipeline import query_utils
-from kepler.training_data_collection_pipeline import utils
 
 JSON = Any
 
@@ -315,7 +315,7 @@ def create_examples(database_configuration: query_utils.DatabaseConfiguration,
       query_execution_data=query_execution_data).all()
 
   for plan_id in plan_ids:
-    hinted_query = utils.get_hinted_query(
+    hinted_query = query_text_utils.get_hinted_query(
         query=templates[query_id]['query'],
         hints=plan_hints[query_id][plan_id]['hints'])
     with multiprocessing.Pool(

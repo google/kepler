@@ -149,7 +149,10 @@ class WorkloadGenerator:
 
     data_mapping = query_execution_data[self._query_id]
     self._parameters = []
-    for parameters_as_key in data_mapping.keys():
+    for parameters_as_key, results in data_mapping.items():
+      # Ignore parameters that have default plan timed out.
+      if "default_timed_out" in results["results"]:
+        continue
       # We rsplit since there is a param value with c#; in general our delimiter
       # of #### won't work if there are both params that begin and end with #.
       self._parameters.append(parameters_as_key.rsplit(_NAME_DELIMITER))

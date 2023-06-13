@@ -187,6 +187,9 @@ class DatabaseSimulator:
         raise ValueError(f"Execution data contains key \"{_EXPLAINS}\", which "
                          "is reserved for query_explain_data")
 
+      if "default_timed_out" in stats["results"]:
+        continue
+
       # We rsplit since there is a param value with c#; in general our delimiter
       # of #### won't work if there are both params that begin and end with #.
       params_as_tuple = tuple(parameters_as_key.rsplit(_NAME_DELIMITER))
@@ -320,12 +323,13 @@ class DatabaseSimulator:
 
     plan_results = entry["results"][plan_id]
     is_default = entry[_DEFAULT] == plan_id
-    # Set the latency to the timeout if the query timed_out. Otherwise, compute
-    # its execution latency.
-    latency = next((element["timed_out"]
-                    for element in plan_results
-                    if "timed_out" in element), None)
-    if latency is None:
+
+    # If there are timeouts, set the time to the highest observed runtime.
+    # In some cases, this may be the first iteration, which has a higher timeout
+    # threshold.
+    if any(["timed_out" in d for d in plan_results]):
+      latency = np.max([next(iter(d.values())) for d in plan_results])
+    else:
       estimator_func = ESTIMATOR_MAP[self._estimator]
       latency = estimator_func([d["duration_ms"] for d in plan_results])
 

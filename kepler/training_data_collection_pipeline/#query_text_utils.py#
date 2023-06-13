@@ -1,0 +1,26 @@
+"""Provides simple generic utils."""
+
+from typing import Any, Sequence
+
+
+# TODO(b/199162711): Transition this script and downstream analysis scripts to a
+# structured format instead of using _NAME_DELIMITER.
+_NAME_DELIMITER = "####"
+
+
+def get_params_as_string(params: Sequence[Any]) -> str:
+  return _NAME_DELIMITER.join([str(p) for p in params])
+
+
+def substitute_query_params(query: str, params: Sequence[Any]) -> str:
+  # Replace in reverse order so that eg param1 does not interfere with
+  # param12 via a substring match.
+  if params:
+    for i in range(len(params) - 1, -1, -1):
+      query = query.replace(f'@param{i}', str(params[i]))
+
+  return query
+
+
+def get_hinted_query(query: str, hints: str) -> str:
+  return f'{hints} {query}'

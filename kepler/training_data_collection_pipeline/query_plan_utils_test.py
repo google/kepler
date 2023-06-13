@@ -29,17 +29,17 @@ class QueryPlanUtilsTest(absltest.TestCase):
 
   def test_filter_plan_keys(self):
     remove_keys = [
-        'Parallel Aware', 'Relation Name', 'Startup Cost',
-        'Parent Relationship', 'Inner Unique', 'Join Filter', 'Filter',
-        'Plan Rows', 'Plan Width', 'Total Cost'
+        "Parallel Aware", "Relation Name", "Startup Cost",
+        "Parent Relationship", "Inner Unique", "Join Filter", "Filter",
+        "Plan Rows", "Plan Width", "Total Cost"
     ]
 
     plan_path = os.path.join(_TEST_DATA_DIR,
-                             'generate_candidates_explain_plans.json')
+                             "generate_candidates_explain_plans.json")
     test_query_explain_plans = json.loads(resources.GetResource(plan_path))
 
     filtered_plan_path = os.path.join(
-        _TEST_DATA_DIR, 'filtered_generate_candidates_explain_plans.json')
+        _TEST_DATA_DIR, "filtered_generate_candidates_explain_plans.json")
     expected_filtered_query_explain_plans = json.loads(
         resources.GetResource(filtered_plan_path))
 
@@ -48,5 +48,5 @@ class QueryPlanUtilsTest(absltest.TestCase):
     self.assertEqual(filtered_plans, expected_filtered_query_explain_plans)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
   absltest.main()

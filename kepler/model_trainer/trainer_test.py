@@ -23,7 +23,6 @@ from kepler.data_management import database_simulator
 from kepler.data_management import test_util as data_test_util
 from kepler.data_management import workload
 from kepler.model_trainer import multihead_model
-from kepler.model_trainer import pairwise_ranking_model
 from kepler.model_trainer import test_util
 from kepler.model_trainer import trainer
 from kepler.model_trainer import trainer_util
@@ -87,7 +86,7 @@ class TrainerTest(parameterized.TestCase):
                                                            plans, model)
 
     query_id = data_test_util.TEST_QUERY_ID
-    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id])
+    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id]) - 1
     x, y = classification_trainer.construct_training_data(query_execution_df)
 
     # Check that inputs are valid.
@@ -151,7 +150,7 @@ class TrainerTest(parameterized.TestCase):
         self._metadata, plans, model)
 
     query_id = data_test_util.TEST_QUERY_ID
-    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id])
+    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id]) - 1
     x, y = near_optimal_trainer.construct_training_data(query_execution_df,
                                                         near_optimal_threshold,
                                                         default_relative)
@@ -178,102 +177,13 @@ class TrainerTest(parameterized.TestCase):
     near_optimal_trainer.train(
         x, y, epochs=1, batch_size=len(y), sample_weight=np.arange(len(x[0])))
 
-  @parameterized.named_parameters(("plan_cover1", [0, 1, 2], [
-      np.array(["first"] * 15),
-      np.array([
-          "a", "a", "a", "a", "a", "a", "b", "b", "b", "b", "b", "b", "c", "c",
-          "c"
-      ]),
-      np.array([2, 2, 2, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0]),
-      np.array([
-          0., 0., 0., 86400., 86400., 86400., 172800., 172800., 172800.,
-          259200., 259200., 259200., 345600., 345600., 345600.
-      ]),
-      np.array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
-      np.array(["first"] * 15),
-      np.array([
-          "a", "a", "a", "a", "a", "a", "b", "b", "b", "b", "b", "b", "c", "c",
-          "c"
-      ]),
-      np.array([2, 2, 2, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0]),
-      np.array([
-          0., 0., 0., 86400., 86400., 86400., 172800., 172800., 172800.,
-          259200., 259200., 259200., 345600., 345600., 345600.
-      ]),
-      np.array([1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 2, 2])
-  ], np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1])),
-                                  ("plan_cover2", [0, 2], [
-                                      np.array(["first"] * 5),
-                                      np.array(["a", "a", "b", "b", "c"]),
-                                      np.array([2, 1, 0, 1, 0]),
-                                      np.arange(5) * 86400,
-                                      np.array([0, 0, 0, 0, 0]),
-                                      np.array(["first"] * 5),
-                                      np.array(["a", "a", "b", "b", "c"]),
-                                      np.array([2, 1, 0, 1, 0]),
-                                      np.arange(5) * 86400,
-                                      np.array([2, 2, 2, 2, 2])
-                                  ], np.array([0, 0, 0, 1, 1])))
-  def test_pairwise_training_data(self, plan_cover,
-                                  expected_inputs, expected_outputs):
-    """Check that PairwiseRankingTrainer produces correct training data."""
-    query_execution_metadata = _construct_query_execution_metadata(plan_cover)
-    plans = workload.KeplerPlanDiscoverer(
-        query_execution_metadata=query_execution_metadata)
-    query_execution_df = self._get_query_execution_df(query_execution_metadata)
-
-    num_plans = len(plans.plan_ids)
-
-    model = pairwise_ranking_model.PairwiseRankingModel(
-        self._metadata,
-        plans.plan_ids,
-        test_util.TEST_MODEL_CONFIG_0,
-        test_util.TEST_PREPROCESSING_CONFIG_1)
-    pairwise_trainer = trainer.PairwiseRankingTrainer(self._metadata,
-                                                      plans, model)
-
-    query_id = data_test_util.TEST_QUERY_ID
-    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id])
-    x, y = pairwise_trainer.construct_training_data(query_execution_df)
-
-    # Check that column names are correct.
-    column_names = pairwise_trainer.get_parameter_column_names()
-    self.assertTrue(all([column_names[i] == f"param{i}" for i in range(2)]))
-
-    # Check input/outputs are as expected.
-    self.assertTrue(all([np.array_equal(feature, expected)
-                         for feature, expected in zip(x, expected_inputs)]))
-    self.assertTrue(np.array_equal(y, expected_outputs))
-
-    # Basic length checks. Some are redundant with above, but are kept here
-    # for expository purposes.
-    num_predicates = len(self._metadata["predicates"])
-    num_pairs = num_params * num_plans * (num_plans - 1) / 2
-    self.assertLen(x, 2 * num_predicates + 2)
-    # Check that input types are as expected.
-    for i in range(num_predicates):
-      predicate = self._metadata["predicates"][i]
-      self.assertEqual(
-          x[i].dtype,
-          trainer_util.get_np_type(predicate["data_type"]))
-      self.assertEqual(
-          x[i + num_predicates + 1].dtype,
-          trainer_util.get_np_type(predicate["data_type"]))
-
-      # Sanity check that lengths are as expected.
-      self.assertLen(x[i], num_pairs)
-      self.assertLen(x[i + num_predicates + 1], num_pairs)
-
-    # Sanity check that the model can train.
-    pairwise_trainer.train(x, y, epochs=1, batch_size=len(y))
-
   @parameterized.named_parameters(
       ("plan_cover1", [0, 1, 2],
        np.array([[1, 2, 3], [11, 22, 33], [222, 111, 333],
-                 [3333, 2222, 1111], [31, 32, 1]])),
+                 [3333, 2222, 1111], [50, 32, 1]])),
       ("plan_cover2", [0, 2],
        np.array([[1, 3], [11, 33], [222, 333],
-                 [3333, 1111], [31, 1]]))
+                 [3333, 1111], [50, 1]]))
   )
   def test_regression_training_data(self, plan_cover, expected_latencies):
     """Checks that RegressionTrainer produces correct training data."""
@@ -291,7 +201,7 @@ class TrainerTest(parameterized.TestCase):
                                                    plans, model)
 
     query_id = data_test_util.TEST_QUERY_ID
-    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id])
+    num_params = len(data_test_util.QUERY_EXECUTION_DATA[query_id]) - 1
     x, y = regression_trainer.construct_training_data(query_execution_df)
 
     # Check that inputs are valid.

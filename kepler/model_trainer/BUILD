@@ -18,6 +18,8 @@ py_test(
     name = "trainer_util_test",
     srcs = ["trainer_util_test.py"],
     deps = [
+        ":evaluation",
+        ":test_util",
         ":trainer_util",
         "//kepler/data_management:database_simulator",
         "//kepler/data_management:test_util",
@@ -25,6 +27,7 @@ py_test(
         # Implicit absl.testing dependency.
         # Implicit absl.parameterized dependency.
         # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
     ],
 )
 
@@ -49,7 +52,6 @@ py_test(
     deps = [
         ":model_base",
         ":multihead_model",
-        ":pairwise_ranking_model",
         ":test_util",
         ":trainer",
         ":trainer_util",
@@ -69,7 +71,7 @@ py_binary(
     deps = [
         ":evaluation",
         ":model_base",
-        ":multihead_model",
+        ":sngp_multihead_model",
         ":trainer",
         ":trainer_util",
         "//kepler/data_management:database_simulator",
@@ -77,6 +79,7 @@ py_binary(
         # Implicit absl.app dependency.
         # Implicit absl.flags dependency.
         # Implicit absl.logging dependency.
+        # Implicit numpy dependency.
         # Implicit tensorflow dependency.
     ],
 )
@@ -156,7 +159,6 @@ py_test(
         ":test_util",
         # Implicit absl.testing dependency.
         # Implicit absl.parameterized dependency.
-        # Implicit numpy dependency.
         # Implicit tensorflow dependency.
     ],
 )
@@ -166,6 +168,33 @@ py_library(
     srcs = ["multihead_model.py"],
     deps = [
         ":model_base",
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_library(
+    name = "sngp_multihead_model",
+    srcs = ["sngp_multihead_model.py"],
+    deps = [
+        ":model_base",
+        ":multihead_model",
+        ":trainer_util",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        # Implicit tensorflow_models dependency.
+    ],
+)
+
+py_test(
+    name = "sngp_multihead_model_test",
+    srcs = ["sngp_multihead_model_test.py"],
+    deps = [
+        ":model_base",
+        ":sngp_multihead_model",
+        ":test_util",
+        ":trainer_util",
+        # Implicit absl.testing dependency.
+        # Implicit absl.parameterized dependency.
         # Implicit numpy dependency.
         # Implicit tensorflow dependency.
     ],
@@ -177,31 +206,9 @@ py_test(
     deps = [
         ":model_base",
         ":multihead_model",
+        ":sngp_multihead_model",
         ":test_util",
-        # Implicit absl.testing dependency.
-        # Implicit absl.parameterized dependency.
-        # Implicit numpy dependency.
-        # Implicit tensorflow dependency.
-    ],
-)
-
-py_library(
-    name = "pairwise_ranking_model",
-    srcs = ["pairwise_ranking_model.py"],
-    deps = [
-        ":model_base",
-        # Implicit numpy dependency.
-        # Implicit tensorflow dependency.
-    ],
-)
-
-py_test(
-    name = "pairwise_ranking_model_test",
-    srcs = ["pairwise_ranking_model_test.py"],
-    deps = [
-        ":model_base",
-        ":pairwise_ranking_model",
-        ":test_util",
+        ":trainer_util",
         # Implicit absl.testing dependency.
         # Implicit absl.parameterized dependency.
         # Implicit numpy dependency.

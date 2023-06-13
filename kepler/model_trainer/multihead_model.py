@@ -27,7 +27,6 @@ latency-sensitive training losses for this model.
 
 from typing import Any, List, Mapping, Sequence
 
-import numpy as np
 import tensorflow as tf
 
 from kepler.model_trainer import model_base
@@ -51,10 +50,18 @@ class MultiheadModel(model_base.ModelBase):
   def __init__(self, metadata: JSON, plan_ids: List[int],
                model_config: model_base.ModelConfig,
                preprocessing_config: Sequence[Mapping[str, Any]]):
-    super().__init__(metadata, plan_ids, model_config, preprocessing_config)
+    self._initialize_base(metadata, plan_ids, model_config,
+                          preprocessing_config)
     self._build_model()
 
+  def _initialize_base(self, metadata: JSON, plan_ids: List[int],
+                       model_config: model_base.ModelConfig,
+                       preprocessing_config: Sequence[Mapping[str, Any]]):
+    super().__init__(metadata, plan_ids, model_config, preprocessing_config)
+
+  # LINT.IfChange
   def _build_model(self) -> None:
+    """Constructs model via Keras Functional API."""
     prev_layer = self._construct_preprocessing_layer()
     for i, (layer_size, dropout_rate) in enumerate(
         zip(self._model_config.layer_sizes, self._model_config.dropout_rates)):
@@ -78,31 +85,7 @@ class MultiheadModel(model_base.ModelBase):
         metrics=self._model_config.metrics)
 
     self._model = model
+  # LINT.ThenChange(//depot/google3/research/sir/kepler/model_trainer/sngp_multihead_model.py)
 
   def get_model(self) -> tf.keras.Model:  # pytype: disable=invalid-annotation  # typed-keras
     return self._model
-
-  def _get_model_predictions_helper(self,
-                                    params: List[np.ndarray]) -> np.ndarray:
-    """Get model predictions for a batch of parameters.
-
-    Args:
-      params: Batch of parameter values to input to the model. Each entry in
-        params contains all values for a single input feature.
-
-    Returns:
-      All predicted best plan indices.
-    """
-    return np.argmax(self.get_model_outputs(params), axis=1)
-
-  def get_model_outputs(self, params: List[np.ndarray]) -> np.ndarray:
-    """Perform model inference on a batch of parameters.
-
-    Args:
-      params: Batch of parameter values to input to the model. Each entry in
-        params contains all values for a single input feature.
-
-    Returns:
-      All model outputs.
-    """
-    return self._model.predict_on_batch(self._cast_inputs_np_type(params))

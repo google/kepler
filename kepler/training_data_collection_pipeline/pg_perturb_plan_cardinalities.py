@@ -196,9 +196,11 @@ def multiplicatively_perturb_plan_cardinalities(
   """
 
   def _multiplicatively_perturb_plan_cardinalities_helper(
+      unused_query_manager: query_utils.QueryManager,
       query: str,
       params: List[Any],
-      _: Optional[int] = None) -> Tuple[List[JSON], None]:
+      _: Optional[int] = None,
+  ) -> Tuple[List[JSON], None]:
     """Generates EXPLAIN plans across a series of cardinality perturbations.
 
     This function is passed through as the execute_query_fn argument to
@@ -208,6 +210,7 @@ def multiplicatively_perturb_plan_cardinalities(
     optional timeout in execute_query_fn, is not relevant to the usage here.
 
     Args:
+      unused_query_manager: Unused; only for compatibility purposes.
       query: The hinted query template for which to generate EXPLAIN plans.
       params: The parameter bindings for a single instance of the query.
 
@@ -218,6 +221,7 @@ def multiplicatively_perturb_plan_cardinalities(
            output in the hinted query.
         2) None as the number of rows produced by this query.
     """
+    del unused_query_manager  # External query manager used instead.
     explain_plans = []
 
     explain_plan = query_manager.get_query_plan(query, params)['Plan']
@@ -251,19 +255,21 @@ def multiplicatively_perturb_plan_cardinalities(
     plans = results
 
   pg_execute_training_data_queries.execute_training_data_queries(
+      batch_index=0,
+      parameter_values=parameter_values,
       query_id=query_id,
       templates=templates,
-      parameter_values=parameter_values,
       plan_hints=plan_hints,
       iterations=1,  # 1 iteration sufficient for deterministic computation.
       batch_size=1000000,  # Checkpointing is cheap and not necessary.
-      limit=limit,
       skip_indices=[],
       query_timeout_multiplier=1,  # Ignored by the provided execute_query_fn.
       query_timeout_min_ms=1,  # Ignored by the provided execute_query_fn.
       query_timeout_max_ms=1,  # Ignored by the provided execute_query_fn.
       execute_query_fn=_multiplicatively_perturb_plan_cardinalities_helper,
       checkpoint_results_fn=checkpoint_results,
-      results_key='explain_output_across_cardinality')
+      results_key='explain_output_across_cardinality',
+      limit=limit,
+  )
 
   return plans

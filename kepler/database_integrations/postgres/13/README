@@ -1,0 +1,28 @@
+# Kepler in Postgres 13
+
+We extend the pg_hint_plan extension to request hints from a Kepler server.
+
+## Set Up
+git clone https://github.com/ossc-db/pg_hint_plan.git
+cd pg_hint_plan
+git fetch origin PG13
+git checkout PG13
+patch -p0 < /path/to/kepler_extension.patch
+sudo make install
+sudo service postgresql restart
+
+## Enabling extension.
+Once the host is set, Postgres will expect the server to be reachable and error otherwise.
+
+LOAD 'pg_hint_plan';
+
+SET pg_hint_plan.kepler_port TO <port>;
+SET pg_hint_plan.kepler_host TO <host>;
+
+## Test Set Up
+The following may be required on a fresh postgres to run tests:
+
+CREATE DATABASE test;
+CREATE ROLE test SUPERUSER;
+ALTER ROLE test PASSWORD 'test';
+ALTER ROLE test WITH LOGIN;

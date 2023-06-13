@@ -18,7 +18,7 @@ from typing import Any, List
 from absl.testing import absltest
 from absl.testing import parameterized
 
-from kepler.training_data_collection_pipeline import utils
+from kepler.training_data_collection_pipeline import query_text_utils
 
 
 class QueryManagerPostgresTest(parameterized.TestCase):
@@ -71,13 +71,14 @@ class QueryManagerPostgresTest(parameterized.TestCase):
         possible.
     """
     self.assertEqual(
-        utils.substitute_query_params(query_template, params), expected)
+        query_text_utils.substitute_query_params(query_template, params),
+        expected)
 
   def test_get_hinted_query(self):
     hints = "/*+ SeqScan(foo) */"
     query = "SELECT x from foo"
     self.assertEqual(
-        utils.get_hinted_query(query=query, hints=hints),
+        query_text_utils.get_hinted_query(query=query, hints=hints),
         "/*+ SeqScan(foo) */ SELECT x from foo")
 
 

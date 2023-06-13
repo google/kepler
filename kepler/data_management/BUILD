@@ -1,4 +1,4 @@
-# pytype test and library
+# pytype binary, test, library  # @unused.
 
 package(default_visibility = ["//kepler:__subpackages__"])
 

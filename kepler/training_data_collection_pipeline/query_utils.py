@@ -31,13 +31,14 @@ import dataclasses
 import enum
 import json
 import os
+import time
 from typing import Any, List, Optional, Sequence, Tuple
 
 from absl import logging
 import psycopg2
 import psycopg2.errorcodes
 
-from kepler.training_data_collection_pipeline import utils
+from kepler.training_data_collection_pipeline import query_text_utils
 
 _GET_INDEXES_QUERY = """
 SELECT
@@ -189,7 +190,7 @@ class QueryManager:
           out.
     """
     self.refresh_cursor()
-    executable_query = utils.substitute_query_params(query, params)
+    executable_query = query_text_utils.substitute_query_params(query, params)
 
     if timeout_ms:
       self._cursor.execute(f"SET statement_timeout TO '{timeout_ms}'")
@@ -235,6 +236,64 @@ class QueryManager:
 
     return result, rows if result else None
 
+  def execute_timed_local(
+      self,
+      query: str,
+      params: Optional[Sequence[Any]] = None,
+      timeout_ms: Optional[float] = None,
+  ) -> Tuple[Optional[float], Optional[int]]:
+    """Executes a query and measures its runtime locally (i.e.
+
+    client side).
+
+    This function measures time based on the local time it takes for the
+    connection to execute the query. This is particularly useful when executing
+    multiple queries simultaneously.
+
+    Args:
+      query: SQL query template string with 0 or more parameters provided in the
+        form of @param#, starting with 0.
+      params: List of parameter values to substitute into the query. All values
+        will be cast to str.
+      timeout_ms: The statement timeout for this query in ms.
+
+    Returns:
+      Tuple:
+        1) The execution time of the query in ms or None if the query times out.
+        2) The number of rows produced by the query or None if the query times
+          out.
+    """
+    executable_query = query_text_utils.substitute_query_params(query, params)
+
+    # Set timeout locally inside a transaction to avoid interference with
+    # other concurrent queries.
+    self._cursor.execute('BEGIN')
+    if timeout_ms:
+      self._cursor.execute(f"SET LOCAL statement_timeout TO '{timeout_ms}'")
+
+    result_ms = None
+
+    rows = 0
+    try:
+      start = time.time()
+      self._cursor.execute(executable_query)
+      result_ms = (time.time() - start) * 1000
+
+      # Fetch all the results without loading them all into memory at once.
+      while True:
+        rows_fetched = self._cursor.fetchmany(10000)
+        if not rows_fetched:
+          break
+        rows += len(rows_fetched)
+      self._cursor.execute('COMMIT')
+
+    except psycopg2.OperationalError as e:
+      assert e.pgcode == psycopg2.errorcodes.QUERY_CANCELED
+      # We must END the aborted transaction before running any more queries.
+      self._cursor.execute('END')
+
+    return result_ms, rows if result_ms else None
+
   def execute(self,
               query: str,
               params: Optional[Sequence[Any]] = None) -> List[Tuple[Any]]:
@@ -250,7 +309,7 @@ class QueryManager:
       A list of tuples in which each tuple represents a row from the result set.
     """
     self.refresh_cursor()
-    executable_query = utils.substitute_query_params(query, params)
+    executable_query = query_text_utils.substitute_query_params(query, params)
     logging.debug(executable_query)
 
     self._cursor.execute(executable_query)
@@ -278,7 +337,7 @@ class QueryManager:
     Returns:
       The results of the EXPLAIN ANALYZE, BUFFERS command in JSON format.
     """
-    executable_query = utils.substitute_query_params(query, params)
+    executable_query = query_text_utils.substitute_query_params(query, params)
     query_string = f'EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) {executable_query}'
     return self._execute_query_with_configs(query_string,
                                             configuration_parameters)
@@ -305,7 +364,7 @@ class QueryManager:
     Returns:
       The EXPLAIN plan in JSON format.
     """
-    executable_query = utils.substitute_query_params(query, params)
+    executable_query = query_text_utils.substitute_query_params(query, params)
     query_string = f'EXPLAIN (FORMAT JSON) {executable_query}'
     return self._execute_query_with_configs(query_string,
                                             configuration_parameters)
@@ -326,7 +385,9 @@ class QueryManager:
     """
     self.refresh_cursor()
     logging.debug(query_string)
-    configuration_parameters_list = configuration_parameters if configuration_parameters else []
+    configuration_parameters_list = (
+        configuration_parameters if configuration_parameters else []
+    )
 
     for configuration_parameter in configuration_parameters_list:
       self._cursor.execute(f'SET {configuration_parameter} TO OFF')

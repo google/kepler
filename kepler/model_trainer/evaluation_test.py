@@ -191,9 +191,9 @@ class Evaluation(absltest.TestCase):
         default_latencies=default_latencies,
         optimal_latencies=optimal_latencies)
     self.assertEmpty(results[evaluation.IMPROVEMENTS_RELATIVE])
-    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 31])
+    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 50])
     self.assertEmpty(results[evaluation.IMPROVEMENTS_ABSOLUTE])
-    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 30])
+    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 49])
     self.assertEqual(results[evaluation.NUM_EQUIVALENT], 3)
     self.assertEqual(results[evaluation.NUM_NEAR_OPTIMAL], 2)
 
@@ -203,9 +203,9 @@ class Evaluation(absltest.TestCase):
         optimal_latencies=optimal_latencies,
         improvement_threshold=2.01)
     self.assertEmpty(results[evaluation.IMPROVEMENTS_RELATIVE])
-    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [31])
+    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [50])
     self.assertEmpty(results[evaluation.IMPROVEMENTS_ABSOLUTE])
-    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [30])
+    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [49])
     self.assertEqual(results[evaluation.NUM_EQUIVALENT], 4)
     self.assertEqual(results[evaluation.NUM_NEAR_OPTIMAL], 2)
 
@@ -215,9 +215,9 @@ class Evaluation(absltest.TestCase):
         optimal_latencies=optimal_latencies,
         near_optimal_threshold=.4)
     self.assertEmpty(results[evaluation.IMPROVEMENTS_RELATIVE])
-    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 31])
+    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 50])
     self.assertEmpty(results[evaluation.IMPROVEMENTS_ABSOLUTE])
-    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 30])
+    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 49])
     self.assertEqual(results[evaluation.NUM_EQUIVALENT], 3)
     self.assertEqual(results[evaluation.NUM_NEAR_OPTIMAL], 3)
 
@@ -233,9 +233,9 @@ class Evaluation(absltest.TestCase):
         default_latencies=default_latencies,
         optimal_latencies=optimal_latencies)
     self.assertEqual(results[evaluation.IMPROVEMENTS_RELATIVE], [3])
-    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 31])
+    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [2, 50])
     self.assertEqual(results[evaluation.IMPROVEMENTS_ABSOLUTE], [2222])
-    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 30])
+    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [111, 49])
     self.assertEqual(results[evaluation.NUM_EQUIVALENT], 2)
     self.assertEqual(results[evaluation.NUM_NEAR_OPTIMAL], 3)
 
@@ -245,9 +245,9 @@ class Evaluation(absltest.TestCase):
         optimal_latencies=optimal_latencies,
         improvement_threshold=4)
     self.assertEmpty(results[evaluation.IMPROVEMENTS_RELATIVE])
-    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [31])
+    self.assertEqual(results[evaluation.REGRESSIONS_RELATIVE], [50])
     self.assertEmpty(results[evaluation.IMPROVEMENTS_ABSOLUTE])
-    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [30])
+    self.assertEqual(results[evaluation.REGRESSIONS_ABSOLUTE], [49])
     self.assertEqual(results[evaluation.NUM_EQUIVALENT], 4)
     self.assertEqual(results[evaluation.NUM_NEAR_OPTIMAL], 3)
 

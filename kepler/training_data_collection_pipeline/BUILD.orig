@@ -9,8 +9,31 @@ pytype_strict_library(
     srcs = ["query_utils.py"],
     srcs_version = "PY3",
     deps = [
+        ":utils",
         "//third_party/py/absl/logging",
         "//third_party/py/psycopg2",
+    ],
+)
+
+pytype_strict_library(
+    name = "utils",
+    srcs = ["utils.py"],
+    srcs_version = "PY3",
+    deps = [],
+)
+
+pytype_strict_contrib_test(
+    name = "utils_test",
+    srcs = ["utils_test.py"],
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":test_util",
+        ":utils",
+        "//testing/pybase",
+        "//testing/pybase:parameterized",
     ],
 )
 
@@ -20,6 +43,7 @@ pytype_strict_library(
     srcs_version = "PY3",
     deps = [
         ":query_utils",
+        "//third_party/py/psycopg2",
     ],
 )
 
@@ -34,6 +58,37 @@ pytype_strict_contrib_test(
         ":query_utils",
         ":test_util",
         "//testing/pybase",
+        "//testing/pybase:parameterized",
+    ],
+)
+
+pytype_strict_library(
+    name = "query_plan_utils",
+    srcs = ["query_plan_utils.py"],
+    srcs_version = "PY3",
+)
+
+pytype_strict_library(
+    name = "main_utils",
+    srcs = ["main_utils.py"],
+    srcs_version = "PY3",
+    deps = [
+        "//third_party/py/absl/logging",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "query_plan_utils_test",
+    srcs = ["query_plan_utils_test.py"],
+    data = glob(["testdata/*"]),
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":query_plan_utils",
+        "//pyglib:resources",
+        "//testing/pybase",
     ],
 )
 
@@ -42,9 +97,11 @@ pytype_strict_library(
     srcs = ["pg_generate_plan_candidates.py"],
     srcs_version = "PY3",
     deps = [
+        ":pg_perturb_plan_cardinalities",
+        ":pg_plan_hint_extractor",
+        ":query_plan_utils",
         ":query_utils",
-        "//third_party/py/absl:app",
-        "//third_party/py/absl/logging",
+        "//third_party/py/numpy",
     ],
 )
 
@@ -53,15 +110,16 @@ pytype_strict_contrib_test(
     srcs = ["pg_generate_plan_candidates_test.py"],
     python_version = "PY3",
     tags = [
-        "manual",
         "notap",
     ],
     deps = [
         ":pg_generate_plan_candidates",
+        ":pg_plan_hint_extractor",
         ":query_utils",
         ":test_util",
         "//testing/pybase",
         "//testing/pybase:parameterized",
+        "//third_party/py/numpy",
     ],
 )
 
@@ -71,7 +129,52 @@ pytype_strict_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        ":main_utils",
         ":pg_generate_plan_candidates",
+        ":pg_plan_hint_extractor",
+        ":query_utils",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/flags",
+        "//third_party/py/absl/logging",
+    ],
+)
+
+pytype_strict_library(
+    name = "pg_plan_hint_extractor",
+    srcs = ["pg_plan_hint_extractor.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":query_utils",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/logging",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "pg_plan_hint_extractor_test",
+    srcs = ["pg_plan_hint_extractor_test.py"],
+    data = glob(["testdata/*"]),
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":pg_plan_hint_extractor",
+        ":query_utils",
+        ":test_util",
+        "//pyglib:resources",
+        "//testing/pybase",
+    ],
+)
+
+pytype_strict_binary(
+    name = "pg_plan_hint_extractor_main",
+    srcs = ["pg_plan_hint_extractor_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":main_utils",
+        ":pg_plan_hint_extractor",
         ":query_utils",
         "//third_party/py/absl:app",
         "//third_party/py/absl/flags",
@@ -84,9 +187,11 @@ pytype_strict_library(
     srcs = ["pg_execute_training_data_queries.py"],
     srcs_version = "PY3",
     deps = [
-        ":query_utils",
+        ":utils",
+        "//research/sir/kepler/data_management:database_simulator",
         "//third_party/py/absl:app",
         "//third_party/py/absl/logging",
+        "//third_party/py/numpy",
     ],
 )
 
@@ -96,6 +201,8 @@ pytype_strict_contrib_test(
     python_version = "PY3",
     deps = [
         ":pg_execute_training_data_queries",
+        ":test_util",
+        "//research/sir/kepler/data_management:database_simulator",
         "//testing/pybase",
         "//testing/pybase:parameterized",
     ],
@@ -114,6 +221,19 @@ pytype_strict_binary(
     ],
 )
 
+pytype_strict_binary(
+    name = "query_printer_main",
+    srcs = ["query_printer_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":utils",
+        "//pyglib:gfile",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/flags",
+    ],
+)
+
 pytype_strict_library(
     name = "parameter_generator",
     srcs = ["parameter_generator.py"],
@@ -126,7 +246,6 @@ pytype_strict_contrib_test(
     srcs = ["parameter_generator_test.py"],
     python_version = "PY3",
     tags = [
-        "manual",
         "notap",
     ],
     deps = [
@@ -144,7 +263,163 @@ pytype_strict_binary(
     srcs_version = "PY3",
     deps = [
         ":parameter_generator",
+        ":query_utils",
         "//third_party/py/absl:app",
         "//third_party/py/absl/flags",
+    ],
+)
+
+pytype_strict_library(
+    name = "pg_perturb_plan_cardinalities",
+    srcs = ["pg_perturb_plan_cardinalities.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":pg_execute_training_data_queries",
+        ":pg_plan_hint_extractor",
+        ":query_plan_utils",
+        ":query_utils",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "pg_perturb_plan_cardinalities_test",
+    srcs = ["pg_perturb_plan_cardinalities_test.py"],
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":pg_perturb_plan_cardinalities",
+        ":query_utils",
+        ":test_util",
+        "//testing/pybase",
+    ],
+)
+
+pytype_strict_binary(
+    name = "pg_generate_plan_costs_main",
+    srcs = ["pg_generate_plan_costs_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":pg_perturb_plan_cardinalities",
+        ":query_utils",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/flags",
+    ],
+)
+
+pytype_strict_library(
+    name = "pg_execute_explain_tools",
+    srcs = ["pg_execute_explain_tools.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":pg_plan_hint_extractor",
+        ":query_plan_utils",
+        ":query_utils",
+        ":utils",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "pg_execute_explain_tools_test",
+    srcs = ["pg_execute_explain_tools_test.py"],
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":pg_execute_explain_tools",
+        ":pg_plan_hint_extractor",
+        ":query_utils",
+        ":test_util",
+        "//testing/pybase",
+        "//testing/pybase:parameterized",
+    ],
+)
+
+pytype_strict_binary(
+    name = "pg_execute_explain_tools_main",
+    srcs = ["pg_execute_explain_tools_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":pg_execute_explain_tools",
+        ":query_utils",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/flags",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "e2e_test",
+    srcs = ["e2e_test.py"],
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":parameter_generator",
+        ":pg_execute_training_data_queries",
+        ":pg_generate_plan_candidates",
+        ":pg_plan_hint_extractor",
+        ":query_utils",
+        ":test_util",
+        "//testing/pybase",
+        "//testing/pybase:parameterized",
+    ],
+)
+
+pytype_strict_library(
+    name = "graph_tensor_builder",
+    srcs = ["graph_tensor_builder.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":query_utils",
+        ":utils",
+        "//pyglib:resources",
+        "//research/sir/kepler/data_management:database_simulator",
+        "//research/sir/kepler/data_management:workload",
+        "//third_party/py/numpy",
+        "//third_party/py/tensorflow",
+        "//third_party/py/tensorflow_gnn",
+    ],
+)
+
+pytype_strict_contrib_test(
+    name = "graph_tensor_builder_test",
+    srcs = ["graph_tensor_builder_test.py"],
+    data = [
+        "query_plan_graph_schema.pbtxt",
+    ] + glob([
+        "testdata/*",
+    ]),
+    python_version = "PY3",
+    tags = [
+        "notap",
+    ],
+    deps = [
+        ":graph_tensor_builder",
+        ":query_utils",
+        ":test_util",
+        "//pyglib:resources",
+        "//testing/pybase",
+        "//testing/pybase:parameterized",
+        "//third_party/py/tensorflow",
+        "//third_party/py/tensorflow_gnn",
+    ],
+)
+
+pytype_strict_binary(
+    name = "graph_tensor_builder_main",
+    srcs = ["graph_tensor_builder_main.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":graph_tensor_builder",
+        ":query_utils",
+        "//third_party/py/absl:app",
+        "//third_party/py/absl/flags",
+        "//third_party/py/tensorflow",
     ],
 )

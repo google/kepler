@@ -25,12 +25,57 @@ functionality would be better suited in one of the libraries.
 
 import json
 import os
-from typing import Dict, Any
+from typing import Any, Dict, List
 
 from absl import logging
 
 # Typing aliases.
 JSON = Any
+
+
+class MissingVerificationDataError(ValueError):
+  pass
+
+
+def get_skip_indices(
+    plan_hints: Dict[str, List[Dict[str, str]]], verification_file: str
+) -> Dict[str, List[int]]:
+  """Get plan indices to skip for each query based on verification failures.
+
+  Args:
+   plan_hints: Dict mapping query id to list of hints, each a dict mapping
+     "hints" to hint string.
+   verification_file: Path to verification failures file.
+
+  Returns:
+    Dict mapping query id to list of plan indices to skip.
+
+  Raises:
+    MissingVerificationDataError: If the verification data doesn't match
+      the provided query or hints.
+  """
+  query_id_to_skip_indices = {}
+  if not verification_file:
+    return query_id_to_skip_indices
+
+  with open(verification_file) as f:
+    hint_failures = json.load(f)
+    for query_id in plan_hints:
+      if query_id not in hint_failures:
+        raise MissingVerificationDataError(
+            f"Query {query_id} not in verification file!"
+        )
+      query_id_to_skip_indices[query_id] = []
+      for i, hint in enumerate(plan_hints[query_id]):
+        hint_str = hint["hints"]
+        if hint_str not in hint_failures[query_id]:
+          raise MissingVerificationDataError(
+              f"Missing hint {hint_str} for query {query_id}"
+          )
+        if hint_failures[query_id][hint_str]:
+          query_id_to_skip_indices[query_id].append(i)
+
+  return query_id_to_skip_indices
 
 
 def print_failure_counts(failure_counts: Dict[str, Dict[str, int]]) -> None:
