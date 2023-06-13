@@ -1,0 +1,222 @@
+diff --git pg_hint_plan.c pg_hint_plan.c
+index 21e24d3..556d470 100644
+--- pg_hint_plan.c
++++ pg_hint_plan.c
+@@ -8,6 +8,8 @@
+  *-------------------------------------------------------------------------
+  */
+ #include <string.h>
++#include <unistd.h>
++#include <arpa/inet.h>
+ 
+ #include "postgres.h"
+ #include "access/genam.h"
+@@ -519,7 +521,10 @@ static int	pg_hint_plan_parse_message_level = INFO;
+ static int	pg_hint_plan_debug_message_level = LOG;
+ /* Default is off, to keep backward compatibility. */
+ static bool	pg_hint_plan_enable_hint_table = false;
++static char*	pg_hint_plan_kepler_host = NULL;
++static int	pg_hint_plan_kepler_port = 30709;
+ 
++static int kepler_fd = -1;		  /* Kepler server socket file descriptor */
+ static int plpgsql_recurse_level = 0;		/* PLpgSQL recursion level            */
+ static int recurse_level = 0;		/* recursion level incl. direct SPI calls */
+ static int hint_inhibit_level = 0;			/* Inhibit hinting if this is above 0 */
+@@ -687,6 +692,30 @@ _PG_init(void)
+ 							 NULL,
+ 							 NULL);
+ 
++	DefineCustomStringVariable("pg_hint_plan.kepler_host",
++				                         "Kepler server host",
++				                         "Request plan hints from Kepler server at specified host",
++							 &pg_hint_plan_kepler_host,
++							 NULL,
++							 PGC_USERSET,
++							 0,
++							 NULL,
++							 NULL,
++							 NULL);
++
++	DefineCustomIntVariable("pg_hint_plan.kepler_port",
++							 "Kepler server port",
++							 "Listening port for Kepler server",
++							 &pg_hint_plan_kepler_port,
++							 30709,
++							 1,
++							 65536,
++							 PGC_USERSET,
++							 0,
++							 NULL,
++							 NULL,
++							 NULL);
++
+ 	/* Install hooks. */
+ 	prev_post_parse_analyze_hook = post_parse_analyze_hook;
+ 	post_parse_analyze_hook = pg_hint_plan_post_parse_analyze;
+@@ -2003,6 +2032,122 @@ get_hints_from_comment(const char *p)
+ 	return p;
+ }
+ 
++static void
++terminate_kepler_connection()
++{
++        shutdown(kepler_fd, SHUT_RDWR);
++	kepler_fd = -1;
++}
++
++static bool
++create_kepler_connection()
++{
++	int ret = -1;
++	struct sockaddr_in server_addr = {0};
++
++	if (kepler_fd > 0)
++		return true;
++
++	elog(pg_hint_plan_debug_message_level, "pg_hint_plan: Creating new connection to Kepler server");
++	kepler_fd = socket(AF_INET, SOCK_STREAM, 0);
++	if (kepler_fd < 0)
++	{
++		elog(ERROR, "Unable to create Kepler socket");
++		return false;
++	}
++
++	server_addr.sin_family = AF_INET;
++	server_addr.sin_port = htons(pg_hint_plan_kepler_port);
++	inet_pton(AF_INET, pg_hint_plan_kepler_host, &server_addr.sin_addr);
++	ret = connect(kepler_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
++	if (ret == -1)
++	{
++		terminate_kepler_connection();
++		return false;
++	}
++
++	return true;
++}
++
++/*
++ * Check for VariableSetStmt and VariableShowStmt.
++ */
++static bool
++is_variable_statement(const Query *query)
++{
++        if (query->commandType != CMD_UTILITY)
++                return false;
++
++	return (IsA((Query *)query->utilityStmt, VariableSetStmt) ||
++		IsA((Query *)query->utilityStmt, VariableShowStmt));
++}
++
++/*
++ * Get hints from Kepler server.
++ */
++static const char *
++get_hints_from_kepler(const char *query_str)
++{
++        int ret = -1;
++	int bytes_remaining = 0;
++	const char* buffer = NULL;
++	char* hint_str = NULL;
++        elog(INFO, ("get hints from Kepler"));
++	/* Connect to kepler socket if not already connected. */
++	if (!create_kepler_connection())
++	{
++		elog(ERROR, "Unable to create connection to Kepler server");
++		return NULL;
++	}
++
++	bytes_remaining = strlen(query_str);
++	buffer = query_str;
++
++	elog(pg_hint_plan_debug_message_level, "pg_hint_plan: Requesting hint for: %s", query_str);
++
++	/* First send the number of bytes in the query. */
++	ret = write(kepler_fd, &bytes_remaining, sizeof(bytes_remaining));
++	if (ret < 0)
++		{
++			elog(ERROR, "Unable to send request to Kepler server");
++			terminate_kepler_connection();
++			return NULL;
++		}
++	while (bytes_remaining)
++	{
++		ret = write(kepler_fd, buffer, bytes_remaining);
++		if (ret < 0)
++		{
++			elog(ERROR, "Unable to send request to Kepler server");
++			terminate_kepler_connection();
++			return NULL;
++		}
++		bytes_remaining -= ret;
++		buffer += ret;
++	}
++
++	// TODO: Support dynamic length of hint strings.
++	hint_str = palloc(4096);
++	memset(hint_str, 0, 4096);
++	ret = read(kepler_fd, hint_str, 4096);
++	if (ret <= 0)
++	{
++		elog(ERROR, "Unable to receive hint from Kepler server");
++		pfree(hint_str);
++		terminate_kepler_connection();
++		return NULL;
++	}
++
++	if (ret == 1)
++	{
++		elog(pg_hint_plan_debug_message_level, "pg_hint_plan: Kepler server did not give hint");
++		pfree(hint_str);
++		return NULL;
++	}
++
++	return hint_str;
++}
++
+ /*
+  * Parse hints that got, create hint struct from parse tree and parse hints.
+  */
+@@ -2879,6 +3024,43 @@ get_current_hint_string(ParseState *pstate, Query *query)
+ 		snprintf(qnostr, sizeof(qnostr), "[qno=0x%x]", qno++);
+ 	qno++;
+ 
++	/* TODO: The get_query_string() function will get called twice in the
++	   case of pg_hint_plan_enable_hint_table and Kepler doesn't provide a
++	   hint. */
++	query_str = get_query_string(pstate, query, NULL);
++
++	if (pg_hint_plan_kepler_host && !is_variable_statement(query))
++	{
++		/* get hints from Kepler. */
++		oldcontext = MemoryContextSwitchTo(TopMemoryContext);
++		current_hint_str = get_hints_from_kepler(query_str);
++		MemoryContextSwitchTo(oldcontext);
++
++		if (debug_level > 1)
++		{
++			if (debug_level == 2 && query_str && debug_query_string &&
++				strcmp(query_str, debug_query_string))
++				ereport(pg_hint_plan_debug_message_level,
++						(errmsg("hints in Kepler=\"%s\"",
++								current_hint_str ? current_hint_str : "(none)"),
++						 errhidestmt(msgqno != qno),
++						 errhidecontext(msgqno != qno)));
++			else
++				ereport(pg_hint_plan_debug_message_level,
++						(errmsg("hints in Kepler=\"%s\", query=\"%s\", debug_query_string=\"%s\"",
++								current_hint_str ? current_hint_str : "(none)",
++								query_str ? query_str : "(none)",
++								debug_query_string ? debug_query_string : "(none)"),
++						 errhidestmt(msgqno != qno),
++						 errhidecontext(msgqno != qno)));
++			msgqno = qno;
++		}
++
++		/* Return if we have hint string here */
++		if (current_hint_str)
++			return;
++	}
++
+ 	/* search the hint table for a hint if requested */
+ 	if (pg_hint_plan_enable_hint_table)
+ 	{

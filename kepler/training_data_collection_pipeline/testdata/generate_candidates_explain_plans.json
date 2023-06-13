@@ -1,0 +1,778 @@
+{
+  "output": {
+    "q0_0": [
+      {
+        "params": [
+          "https://hello.com"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Join Type": "Inner",
+            "Startup Cost": 21.71,
+            "Total Cost": 62.9,
+            "Plan Rows": 11,
+            "Plan Width": 20,
+            "Inner Unique": false,
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Relation Name": "foo",
+                "Alias": "foo",
+                "Startup Cost": 0,
+                "Total Cost": 32.6,
+                "Plan Rows": 2260,
+                "Plan Width": 8
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Startup Cost": 21.7,
+                "Total Cost": 21.7,
+                "Plan Rows": 1,
+                "Plan Width": 12,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Relation Name": "bar",
+                    "Alias": "bar",
+                    "Startup Cost": 0,
+                    "Total Cost": 21.7,
+                    "Plan Rows": 1,
+                    "Plan Width": 12,
+                    "Filter": "((a < 2) AND ((c)::text = 'https://hello.com'::text))"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'https://hello.com'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 21.71,
+              "Total Cost": 62.9,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Startup Cost": 21.7,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Relation Name": "bar",
+                      "Alias": "bar",
+                      "Startup Cost": 0,
+                      "Total Cost": 21.7,
+                      "Plan Rows": 1,
+                      "Plan Width": 12,
+                      "Filter": "((a < 2) AND ((c)::text = 'https://hello.com'::text))"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'https://hello.com'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://goodbye.org/methods"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Join Type": "Inner",
+            "Startup Cost": 21.71,
+            "Total Cost": 62.9,
+            "Plan Rows": 11,
+            "Plan Width": 20,
+            "Inner Unique": false,
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Relation Name": "foo",
+                "Alias": "foo",
+                "Startup Cost": 0,
+                "Total Cost": 32.6,
+                "Plan Rows": 2260,
+                "Plan Width": 8
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Startup Cost": 21.7,
+                "Total Cost": 21.7,
+                "Plan Rows": 1,
+                "Plan Width": 12,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Relation Name": "bar",
+                    "Alias": "bar",
+                    "Startup Cost": 0,
+                    "Total Cost": 21.7,
+                    "Plan Rows": 1,
+                    "Plan Width": 12,
+                    "Filter": "((a < 2) AND ((c)::text = 'http://goodbye.org/methods'::text))"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://goodbye.org/methods'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 21.71,
+              "Total Cost": 62.9,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Startup Cost": 21.7,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Relation Name": "bar",
+                      "Alias": "bar",
+                      "Startup Cost": 0,
+                      "Total Cost": 21.7,
+                      "Plan Rows": 1,
+                      "Plan Width": 12,
+                      "Filter": "((a < 2) AND ((c)::text = 'http://goodbye.org/methods'::text))"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://goodbye.org/methods'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://www.goodnight.org"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Join Type": "Inner",
+            "Startup Cost": 21.71,
+            "Total Cost": 62.9,
+            "Plan Rows": 11,
+            "Plan Width": 20,
+            "Inner Unique": false,
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Relation Name": "foo",
+                "Alias": "foo",
+                "Startup Cost": 0,
+                "Total Cost": 32.6,
+                "Plan Rows": 2260,
+                "Plan Width": 8
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Startup Cost": 21.7,
+                "Total Cost": 21.7,
+                "Plan Rows": 1,
+                "Plan Width": 12,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Relation Name": "bar",
+                    "Alias": "bar",
+                    "Startup Cost": 0,
+                    "Total Cost": 21.7,
+                    "Plan Rows": 1,
+                    "Plan Width": 12,
+                    "Filter": "((a < 2) AND ((c)::text = 'http://www.goodnight.org'::text))"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://www.goodnight.org'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 21.71,
+              "Total Cost": 62.9,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Startup Cost": 21.7,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Relation Name": "bar",
+                      "Alias": "bar",
+                      "Startup Cost": 0,
+                      "Total Cost": 21.7,
+                      "Plan Rows": 1,
+                      "Plan Width": 12,
+                      "Filter": "((a < 2) AND ((c)::text = 'http://www.goodnight.org'::text))"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://www.goodnight.org'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://www.goodmorning.com"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Join Type": "Inner",
+            "Startup Cost": 21.71,
+            "Total Cost": 62.9,
+            "Plan Rows": 11,
+            "Plan Width": 20,
+            "Inner Unique": false,
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Relation Name": "foo",
+                "Alias": "foo",
+                "Startup Cost": 0,
+                "Total Cost": 32.6,
+                "Plan Rows": 2260,
+                "Plan Width": 8
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Startup Cost": 21.7,
+                "Total Cost": 21.7,
+                "Plan Rows": 1,
+                "Plan Width": 12,
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Relation Name": "bar",
+                    "Alias": "bar",
+                    "Startup Cost": 0,
+                    "Total Cost": 21.7,
+                    "Plan Rows": 1,
+                    "Plan Width": 12,
+                    "Filter": "((a < 2) AND ((c)::text = 'http://www.goodmorning.com'::text))"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://www.goodmorning.com'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 21.71,
+              "Total Cost": 62.9,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                },
+                {
+                  "Node Type": "Hash",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Startup Cost": 21.7,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Relation Name": "bar",
+                      "Alias": "bar",
+                      "Startup Cost": 0,
+                      "Total Cost": 21.7,
+                      "Plan Rows": 1,
+                      "Plan Width": 12,
+                      "Filter": "((a < 2) AND ((c)::text = 'http://www.goodmorning.com'::text))"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Parallel Aware": false,
+              "Join Type": "Inner",
+              "Startup Cost": 0,
+              "Total Cost": 82.55,
+              "Plan Rows": 11,
+              "Plan Width": 20,
+              "Inner Unique": false,
+              "Join Filter": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Relation Name": "bar",
+                  "Alias": "bar",
+                  "Startup Cost": 0,
+                  "Total Cost": 21.7,
+                  "Plan Rows": 1,
+                  "Plan Width": 12,
+                  "Filter": "((a < 2) AND ((c)::text = 'http://www.goodmorning.com'::text))"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Inner",
+                  "Parallel Aware": false,
+                  "Relation Name": "foo",
+                  "Alias": "foo",
+                  "Startup Cost": 0,
+                  "Total Cost": 32.6,
+                  "Plan Rows": 2260,
+                  "Plan Width": 8
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      }
+    ]
+  }
+}

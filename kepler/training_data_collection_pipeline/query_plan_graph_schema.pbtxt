@@ -1,0 +1,126 @@
+# proto-file: https://github.com/tensorflow/gnn/blob/main/tensorflow_gnn/proto/graph_schema.proto
+# proto-message: GraphSchema
+
+node_sets {
+  key: "node"
+  value {
+    description: "Operator node in the query plan tree described by the EXPLAIN plan."
+
+    features {
+      key: "node_type"
+      value: {
+        description: "The node type in the query plan. Some node types are named directly after an operator type."
+        dtype: DT_STRING
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "relation_name"
+      value: {
+        description: "The relation this node reads from. Carries the value 'Undefined' if not relevant for the node_type."
+        dtype: DT_STRING
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "alias"
+      value: {
+        description: "The alias used for the referenced relation. Carries the value 'Undefined' if not relevant for this node_type."
+        dtype: DT_STRING
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "join_type"
+      value: {
+        description: "The join algorithm used by this node. Carries the value 'Undefined' if not relevant for this node_type."
+        dtype: DT_STRING
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "parent_relationship"
+      value: {
+        description: "A description of how this node relates to its parent, eg Inner or Outer for joins. Carries the value 'Undefined' if not relevant for this node_type."
+        dtype: DT_STRING
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "startup_cost"
+      value: {
+        description: "The cost estimate of query execution work done before this node can being processing data."
+        dtype: DT_FLOAT
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "total_cost"
+      value: {
+        description: "The cumulative cost estimate for all the query execution work done by this node and its subtree."
+        dtype: DT_FLOAT
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "cardinality_estimate"
+      value: {
+        description: "The cardinality estimate for the output of this node."
+        dtype: DT_INT64
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "tree_depth_from_root"
+      value: {
+        description: "The distance between this node and the query tree root."
+        dtype: DT_INT64
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "tree_height_from_deepest_leaf"
+      value: {
+        description: "The distance between this node and the deepest leaf in its subtree."
+        dtype: DT_INT64
+        shape { dim { size: 1 } }
+      }
+    }
+    features {
+      key: "subtree_size"
+      value: {
+        description: "The number of nodes in the subtree rooted at this node, including this node."
+        dtype: DT_INT64
+        shape { dim { size: 1 } }
+      }
+    }
+
+  }
+}
+edge_sets {
+  key: "edge"
+  value {
+    description: "Flow of rows between operators during query execution."
+    source: "node"
+    target: "node"
+  }
+}
+
+context {
+  features {
+    key: "total_cost"
+    value {
+      description: "Postgres optimizer's total cost estimate."
+      dtype: DT_FLOAT
+      shape { dim { size: 1 } }
+    }
+  }
+  features {
+    key: "latency_ms"
+    value {
+      description: "The query execution time in ms."
+      dtype: DT_FLOAT
+      shape { dim { size: 1 } }
+    }
+  }
+}

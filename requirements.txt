@@ -1,0 +1,11 @@
+absl-py
+numpy
+pandas
+pglast==3.17
+psycopg2
+pyglib
+python-dateutil
+scipy
+tensorflow==2.11.0
+tensorflow-gnn
+tf-models-official==2.11.0

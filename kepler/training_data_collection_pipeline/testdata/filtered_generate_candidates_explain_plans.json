@@ -1,0 +1,386 @@
+{
+  "output": {
+    "q0_0": [
+      {
+        "params": [
+          "https://hello.com"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Join Type": "Inner",
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Alias": "foo"
+              },
+              {
+                "Node Type": "Hash",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Alias": "bar"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Join Type": "Inner",
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                },
+                {
+                  "Node Type": "Hash",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Alias": "bar"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://goodbye.org/methods"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Join Type": "Inner",
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Alias": "foo"
+              },
+              {
+                "Node Type": "Hash",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Alias": "bar"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Join Type": "Inner",
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                },
+                {
+                  "Node Type": "Hash",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Alias": "bar"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://www.goodnight.org"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Join Type": "Inner",
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Alias": "foo"
+              },
+              {
+                "Node Type": "Hash",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Alias": "bar"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Join Type": "Inner",
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                },
+                {
+                  "Node Type": "Hash",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Alias": "bar"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      },
+      {
+        "params": [
+          "http://www.goodmorning.com"
+        ],
+        "result": {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Join Type": "Inner",
+            "Hash Cond": "(foo.x = bar.b)",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Alias": "foo"
+              },
+              {
+                "Node Type": "Hash",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Alias": "bar"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "additional_plans": [
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Hash Join",
+              "Join Type": "Inner",
+              "Hash Cond": "(foo.x = bar.b)",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                },
+                {
+                  "Node Type": "Hash",
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Alias": "bar"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "Plan": {
+              "Node Type": "Nested Loop",
+              "Join Type": "Inner",
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "bar"
+                },
+                {
+                  "Node Type": "Seq Scan",
+                  "Alias": "foo"
+                }
+              ]
+            }
+          }
+        ],
+        "sources": [
+          [
+            "enable_hashjoin"
+          ],
+          [
+            "enable_mergejoin"
+          ],
+          [
+            "enable_hashjoin",
+            "enable_mergejoin"
+          ]
+        ]
+      }
+    ]
+  }
+}
