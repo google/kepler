@@ -78,11 +78,14 @@ Environment tools:
 
 *   The repository uses the bazel build tool.
 
-*   The workflow has been tested with python3.10. A python version below 3.8
-    will definitely not work due to the tensorflow version.
+*   The workflow has been tested with python3.10 and uses `python3.10-venv`. A
+    python version below 3.8 will definitely not work due to the tensorflow
+    version.
 
 *   The psycopg2 in `requirements.txt` requires `libpq-dev` (or the equivalent
     for the OS)
+
+*   Some libraries require installing `build-essential`.
 
 *   This implementation expects to connect to a Postgres 13 instance with
     [pg_hint_plan](https://github.com/ossc-db/pg_hint_plan/tree/PG13) for PG13
@@ -91,7 +94,7 @@ Environment tools:
 Ubuntu-friendly command:
 
 ```
-sudo apt-get install libpq-dev python3.10-dev python3.10-venv
+sudo apt-get install python3.10-venv libpq-dev build-essential
 ```
 
 After installing the requirements, use `bazel build` for building and `bazel
