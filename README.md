@@ -76,7 +76,8 @@ The base directory with `LICENSE.txt` consists of the following:
 
 Environment tools:
 
-*   The repository uses the bazel build tool.
+*   The repository uses the [bazel](https://bazel.build/install/ubuntu) build
+    tool.
 
 *   The workflow has been tested with python3.10 and requires `python3.10-venv`
     and `python3.10-dev`. A python version below 3.8 will definitely not work
