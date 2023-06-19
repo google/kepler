@@ -38,6 +38,7 @@ incurring that significant cost.
 import collections
 import copy
 import json
+import math
 import os
 from typing import Any, List, Optional
 
@@ -55,10 +56,11 @@ from kepler.model_trainer import trainer
 from kepler.model_trainer import trainer_util
 
 _TRAINING_SPLIT_FRACTION = 0.8
-_NUM_ACTIVE_LEARNING_SAMPLING_ITERATIONS = 7
-_NUM_INITIAL_QUERY_INSTANCES = 1000
-_NUM_NEXT_QUERY_INSTANCES_PER_ITERATION = 500
+_NUM_ACTIVE_LEARNING_SAMPLING_ITERATIONS = 10
+_NUM_INITIAL_QUERY_INSTANCES = 2000
+_NUM_NEXT_QUERY_INSTANCES_PER_ITERATION = 1000
 _CONFIDENCE_THRESHOLD = 0.9
+_PREDICTION_BATCH_SIZE = 1024
 
 JSON = Any
 
@@ -259,9 +261,17 @@ class ActiveLearner:
 
     parameters = np.array(
         [query_instance.parameters for query_instance in self._parameter_pool]
-    ).T
-    _, auxiliary = model_predictor.predict(parameters.tolist())
-    confidences = auxiliary["confidences"]
+    )
+
+    # Run prediction in batches to avoid memory issues.
+    confidences_list = []
+    for i in range(math.ceil(len(parameters) / _PREDICTION_BATCH_SIZE)):
+      parameters_list = parameters[
+          i * _PREDICTION_BATCH_SIZE : (i + 1) * _PREDICTION_BATCH_SIZE
+      ].T.tolist()
+      _, auxiliary = model_predictor.predict(parameters_list)
+      confidences_list.append(auxiliary["confidences"])
+    confidences = np.concatenate(confidences_list)
     max_confidences = np.max(confidences, axis=1)
     max_confidence_tuples = [
         (i, max_confidence) for i, max_confidence in enumerate(max_confidences)

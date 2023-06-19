@@ -87,7 +87,7 @@ py_test(
     ],
     deps = [
         ":query_plan_utils",
-        "//pyglib:resources",
+        # Implicit pyglib dependency.
         # Implicit absl.testing dependency.
     ],
 )
@@ -162,7 +162,7 @@ py_test(
         ":pg_plan_hint_extractor",
         ":query_utils",
         ":test_util",
-        "//pyglib:resources",
+        # Implicit pyglib dependency.
         # Implicit absl.testing dependency.
     ],
 )
@@ -395,7 +395,7 @@ py_library(
     deps = [
         ":query_text_utils",
         ":query_utils",
-        "//pyglib:resources",
+        # Implicit pyglib dependency.
         "//kepler/data_management:database_simulator",
         "//kepler/data_management:workload",
         # Implicit numpy dependency.
@@ -420,7 +420,7 @@ py_test(
         ":graph_tensor_builder",
         ":query_utils",
         ":test_util",
-        "//pyglib:resources",
+        # Implicit pyglib dependency.
         # Implicit absl.testing dependency.
         # Implicit absl.parameterized dependency.
         # Implicit tensorflow dependency.
