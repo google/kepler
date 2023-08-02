@@ -92,8 +92,8 @@ def _get_tflite_predictor(
     train: bool,
 ) -> model_base.ModelPredictorBase:
   if train:
-    # Set the 2nd plan as optimal for the first 2 inputs and the 4th plan as
-    # optional for the latter 2 inputes.
+    # Set the 4th plan as optimal for the first 2 inputs and the 2nd plan as
+    # optional for the latter 2 inputs.
     y = np.zeros((4, test_util.TEST_NUM_PLANS_0))
     y[0, 3] = 1
     y[1, 3] = 1
@@ -120,8 +120,8 @@ def _get_keras_model_predictor(
     train: bool,
 ) -> model_base.ModelPredictorBase:
   if train:
-    # Set the 2nd plan as optimal for the first 2 inputs and the 4th plan as
-    # optional for the latter 2 inputes.
+    # Set the 4th plan as optimal for the first 2 inputs and the 2nd plan as
+    # optional for the latter 2 inputs.
     y = np.zeros((4, test_util.TEST_NUM_PLANS_0))
     y[0, 3] = 1
     y[1, 3] = 1

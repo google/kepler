@@ -78,18 +78,13 @@ _SEED = flags.DEFINE_integer(
     "seed", 0, "Seed used to shuffle workload before splitting."
 )
 
-_NUM_TRAINING_PARAMETERS = flags.DEFINE_integer(
-    "num_training_parameters",
-    10,
-    "Number of parameters (and related plans) to use for training.",
-)
-_NUM_EVALUATION_PARAMETERS = flags.DEFINE_integer(
-    "num_evaluation_parameters",
-    10,
-    "Number of parameters (and related plans) to evaluate on.",
+_TRAIN_SPLIT = flags.DEFINE_float(
+    "train_split",
+    0.8,
+    "Fraction of data to use for training."
 )
 _NUM_EPOCHS = flags.DEFINE_integer(
-    "num_epochs", 20, "Number of epochs to train for."
+    "num_epochs", 400, "Number of epochs to train for."
 )
 _BATCH_SIZE = flags.DEFINE_integer("batch_size", 64, "Training minibatch size.")
 _VOCAB_SIZE_LIMIT = flags.DEFINE_integer(
@@ -136,7 +131,7 @@ def main(unused_argv):
   workload.shuffle(full_workload, seed=_SEED.value)
 
   workload_train, workload_eval = workload.split(
-      full_workload, first_half_count=_NUM_TRAINING_PARAMETERS.value
+      full_workload, first_half_fraction=_TRAIN_SPLIT.value,
   )
 
   # Additionally fetch all default execution times to compute near-optimality.

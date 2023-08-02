@@ -142,22 +142,22 @@ TEST_INPUT_PARAMS_0 = [
     np.array(["2016-01-20", "2016-01-20", "2016-01-20", "2016-01-20"]),
 ]
 
-# Note: We would not want to actually train the model using the default
-# CCE loss, since we assume linear output activation. Instead, in the
-# classification setting one should use CCE loss with from_logits set to True.
+# Note: We would not want to actually train the model using the default BCE
+# loss, since we assume linear output activation. Instead, in the classification
+# setting one should use BCE loss with from_logits set to True.
 TEST_MODEL_CONFIG_0 = model_base.ModelConfig(
     [64],
     [0.1],
     1e-3,
     "relu",
-    tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+    tf.keras.losses.BinaryCrossentropy(from_logits=True),
     [],
 )
 TEST_NUM_PLANS_0 = 5
 
-TEST_MODEL_CONFIG_1 = model_base.ModelConfig([64, 32], [0.25, 0.2], 1e-3,
-                                             "tanh", "categorical_crossentropy",
-                                             ["accuracy"])
+TEST_MODEL_CONFIG_1 = model_base.ModelConfig(
+    [64, 32], [0.25, 0.2], 1e-3, "tanh", "binary_crossentropy", ["accuracy"]
+)
 TEST_NUM_PLANS_1 = 10
 
 TEST_MODEL_CONFIG_2 = model_base.ModelConfig(

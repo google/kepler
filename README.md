@@ -17,18 +17,23 @@ leverages Spectral-Normalized Gaussian Process (SNGP) models to produce
 calibrated confidence scores for its predictions, and will fall back to the
 built-in (Postgres) optimizer if its confidence score is not sufficiently high.
 
-For more details, see our paper, [Kepler: Robust Learning for Parametric Query
-Optimization](http://arxiv.org/abs/2306.06798), to appear at SIGMOD 2023.
+For more details, see our SIGMOD 2023 paper
+[Kepler: Robust Learning for Parametric Query Optimization](https://dl.acm.org/doi/abs/10.1145/3588963).
+A brief
+[summary](https://www.growkudos.com/publications/10.1145%25252F3588963/reader)
+appears on Kudos.
 
 ## Usage
 
 Usage for the individual library components can be found in their respective
 comment headers.
 
-The examples directory includes a demonstration for how one could use the Kepler
-data set and DatabaseSimulator for active learning research to reduce the
-training data collection cost of Kepler. A sample run command is provided in the
-[Build and Run](#build-and-run) section below.
+The `examples` directory source code includes a demonstration for how one could
+use the Kepler dataset and associated tooling like `DatabaseSimulator` for
+active learning research to reduce the training data collection cost of Kepler.
+A sample run command is provided in the
+[Using SPQD with DatabaseSimulator](#using-spqd-with-databasesimulator) section
+below.
 
 ## Dataset
 
@@ -72,12 +77,11 @@ The base directory with `LICENSE.txt` consists of the following:
     for model training. The utilities in the `data_management` package are the
     recommended interface for using this data.
 
-## Build and Run
+## Run
+
+### General Set Up
 
 Environment tools:
-
-*   The repository uses the [bazel](https://bazel.build/install/ubuntu) build
-    tool.
 
 *   The workflow has been tested with python3.10 and requires `python3.10-venv`
     and `python3.10-dev`. A python version below 3.8 will definitely not work
@@ -88,29 +92,23 @@ Environment tools:
 
 *   Some libraries require installing `build-essential`.
 
-*   The utilities which do connect to a database were tested using a Postgres 13
-    instance with
-    [pg_hint_plan](https://github.com/ossc-db/pg_hint_plan/tree/PG13) for PG13
-    installed.
-
 Ubuntu-friendly command:
 
 ```
 sudo apt-get install python3.10-venv python3.10-dev libpq-dev build-essential
 ```
 
-After installing the requirements, use `bazel build` for building and `bazel
-run` or `bazel-bin` to execute. The following sample commands presume `BASE` is
-an environment variable set to the base repository directory containing
-`README.md` and `requirements.txt`.
+The following sample commands presume `BASE` is an environment variable set to
+the base repository directory containing `README.md` and `requirements.txt`.
 
 ```
 cd $BASE
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-bazel build kepler/...
 ```
+
+### Using SPQD with DatabaseSimulator
 
 To run the active learning example, first download and unzip the
 [SPQD dataset](#dataset). The following command presumes `SPQD` is the base
@@ -120,7 +118,87 @@ dataset directory containing `LICENSE.txt`.
 
 ```
 cd $BASE
-./bazel-bin/kepler/examples/active_learning_for_training_data_collection_main --query_metadata  $SPQD/stack_query_templates_with_metadata.json  --vocab_data_dir $SPQD/training_metadata --execution_metadata $SPQD/execution_data/results/q31_0/execution_output/stack_q31_0_metadata.json --execution_data $SPQD/execution_data/results/q31_0/execution_output/stack_q31_0.json  --query_id q31_0
+python -m kepler.examples.active_learning_for_training_data_collection_main --query_metadata  $SPQD/stack_query_templates_with_metadata.json  --vocab_data_dir $SPQD/training_metadata --execution_metadata $SPQD/execution_data/results/q31_0/execution_output/stack_q31_0_metadata.json --execution_data $SPQD/execution_data/results/q31_0/execution_output/stack_q31_0.json  --query_id q31_0
+```
+
+### Postgres Set Up
+
+Postgres set up is **not required** for machine learning research using the SPQD
+and the associated `DatabaseSimulator` tool from the `data_management` package.
+
+The utilities which do connect to a database were tested using a Postgres 13
+instance with [pg_hint_plan](https://github.com/ossc-db/pg_hint_plan/tree/PG13)
+for PG13 installed.
+
+Note that installing `pg_hint_plan` may require first installing Postgres dev
+libraries, such as via the following:
+
+```
+sudo apt install postgresql-server-dev-13
+```
+
+After installing Postgres 13 and the matching version of `pg_hint_plan` as shown
+below, execute `CREATE EXTENSION pg_hint_plan` from the `psql` prompt:
+
+```
+git clone https://github.com/ossc-db/pg_hint_plan.git
+cd pg_hint_plan
+git fetch origin PG13
+git checkout PG13
+sudo make install
+sudo service postgresql restart
+```
+
+The pg_stat_statements library needs to be enabled. This is typically done by
+adding `pg_stat_statements` to the `shared_preload_libraries` line in
+`/etc/postgresql/13/main/postgresql.conf` and then restarting Postgres. The
+edited line may look like this:
+
+```
+shared_preload_libraries = 'pg_stat_statements'
+```
+
+At this point, one can execute training data collection queries and build models
+using this codebase. The remaining steps describe additional set up to repeat
+how this project integrated Kepler into Postgres at query time. The pg_hint_plan
+extension was patched to reach out to a server which hosts the models. The
+server checks the hint string in the query for a query id. If the server has a
+model matching the query id, it will produce a set of plan hints. See
+`kepler/database_integrations/model_serving` for an implementation of this
+server.
+
+To patch `pg_hint_plan` for PG13, amend paths below and run the following:
+
+```
+path_to_pg_hint_plan="~/pg_hint_plan"
+path_to_patch="kepler/database_integrations/postgres/13/kepler_extension.patch"
+cd $path_to_pg_hint_plan
+patch -p0 < $path_to_patch
+sudo make install
+sudo service postgresql restart
+```
+
+### Running Binaries
+
+*Coming soon.*
+
+### Running Tests
+
+Running tests requires a few additional steps after installing Postgres 13 and
+pg_hint_plan. Be sure to have executed `CREATE EXTENSION pg_hint_plan` on the
+database, per instructions above. Open a prompt to Postgres by typing `psql` in
+the shell. Then execute the following commands:
+
+```
+CREATE USER test SUPERUSER PASSWORD 'test';
+CREATE DATABASE test;
+```
+
+pytest kepler
+
+```
+cd $BASE
+pytest kepler
 ```
 
 ## Disclaimer

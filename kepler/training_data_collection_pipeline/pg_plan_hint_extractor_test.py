@@ -19,7 +19,7 @@ import os
 
 from typing import Any
 
-from google3.pyglib import resources
+# Elided resources import
 from kepler.training_data_collection_pipeline import pg_plan_hint_extractor
 from kepler.training_data_collection_pipeline import query_utils
 from kepler.training_data_collection_pipeline import test_util
@@ -111,7 +111,7 @@ class PgHintExtractorTest(absltest.TestCase):
     plan_path = os.path.join(_TEST_DATA_DIR,
                              "generate_candidates_explain_plans.json")
     self.test_query_explain_plans = json.loads(
-        resources.GetResource(plan_path))["output"][test_util.TEST_QUERY_ID]
+        open(plan_path, mode='rb').read())["output"][test_util.TEST_QUERY_ID]
 
   def tearDown(self):
     self._test_database.drop()

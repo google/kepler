@@ -303,7 +303,7 @@ class GeneratePlanCandidatesTest(parameterized.TestCase):
               'default'
           ]),
   )
-  @mock.patch(('google3.research.sir.kepler.training_data_collection_pipeline.'
+  @mock.patch(('kepler.training_data_collection_pipeline.'
                'pg_generate_plan_candidates.get_query_plans'),
               functools.partial(_dummy_generation, default_only=True))
   def test_execute_plan_generation_limit_total(self, limit, distributed,
@@ -431,7 +431,13 @@ class GeneratePlanCandidatesTest(parameterized.TestCase):
       ('truncate_left', 10, 10, 2, np.array([1, 10, 100, 1000, 10000])),
       ('truncate_left_rounding', 6, 2, 3, np.array([1, 3, 6, 12, 24, 48, 96])),
       ('no_truncation_rounding', 6, 2, 2, np.array([1, 3, 6, 12, 24])),
-      ('no_truncation', 1000, 10, 2, np.array([10, 100, 1000, 10000, 100000])),
+      (
+          'no_truncation',
+          1000,
+          100,
+          2,
+          np.array([10, 1000, 100000, 10000000, 1000000000]),
+      ),
   )
   def test_row_count_candidates(self, row_count, exponent_base,
                                 exponent_range, expected_candidates):

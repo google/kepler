@@ -19,7 +19,6 @@ import json
 import multiprocessing
 import socket
 import time
-
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -27,8 +26,8 @@ import numpy as np
 from kepler.database_integrations.model_serving import model_server
 from kepler.database_integrations.model_serving import query_parsing_utils
 from kepler.model_trainer import model_base
+from kepler.training_data_collection_pipeline import query_text_utils
 from kepler.training_data_collection_pipeline import test_util
-from kepler.training_data_collection_pipeline import utils
 from absl.testing import absltest
 from absl.testing import parameterized
 
@@ -141,7 +140,7 @@ class ModelServerTest(parameterized.TestCase):
 
     hints = _send_request(
         query_id=test_util.TEST_QUERY_ID,
-        query=utils.substitute_query_params(
+        query=query_text_utils.substitute_query_params(
             query=self._query_template, params=_PARAMS_HINT_0
         ),
     )
@@ -165,7 +164,7 @@ class ModelServerTest(parameterized.TestCase):
 
     hints = _send_request(
         query_id=test_util.TEST_QUERY_ID,
-        query=utils.substitute_query_params(
+        query=query_text_utils.substitute_query_params(
             query=self._query_template, params=params
         ),
     )
@@ -180,7 +179,7 @@ class ModelServerTest(parameterized.TestCase):
 
     hints = _send_request(
         query_id=query_id,
-        query=utils.substitute_query_params(
+        query=query_text_utils.substitute_query_params(
             query=self._query_template, params=_PARAMS_HINT_1
         ),
     )

@@ -18,7 +18,7 @@
 import json
 import os
 
-from google3.pyglib import resources
+# Elided resources import
 from kepler.training_data_collection_pipeline import query_plan_utils
 from absl.testing import absltest
 
@@ -36,12 +36,12 @@ class QueryPlanUtilsTest(absltest.TestCase):
 
     plan_path = os.path.join(_TEST_DATA_DIR,
                              "generate_candidates_explain_plans.json")
-    test_query_explain_plans = json.loads(resources.GetResource(plan_path))
+    test_query_explain_plans = json.loads(open(plan_path, mode='rb').read())
 
     filtered_plan_path = os.path.join(
         _TEST_DATA_DIR, "filtered_generate_candidates_explain_plans.json")
     expected_filtered_query_explain_plans = json.loads(
-        resources.GetResource(filtered_plan_path))
+        open(filtered_plan_path, mode='rb').read())
 
     filtered_plans = query_plan_utils.filter_keys(test_query_explain_plans,
                                                   remove_keys)
