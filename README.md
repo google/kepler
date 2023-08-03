@@ -128,7 +128,8 @@ and the associated `DatabaseSimulator` tool from the `data_management` package.
 
 The utilities which do connect to a database were tested using a Postgres 13
 instance with [pg_hint_plan](https://github.com/ossc-db/pg_hint_plan/tree/PG13)
-for PG13 installed.
+for PG13 installed. The instructions below cover the installation of
+`pg_hint_plan` but do not cover the installation of Postgres 13.
 
 Note that installing `pg_hint_plan` may require first installing Postgres dev
 libraries, such as via the following:
@@ -148,6 +149,9 @@ git checkout PG13
 sudo make install
 sudo service postgresql restart
 ```
+
+If you have not created a user on Postgres yet, you may need to use `sudo su -
+postgres` before typing `psql`.
 
 The pg_stat_statements library needs to be enabled. This is typically done by
 adding `pg_stat_statements` to the `shared_preload_libraries` line in
@@ -170,8 +174,8 @@ server.
 To patch `pg_hint_plan` for PG13, amend paths below and run the following:
 
 ```
-path_to_pg_hint_plan="~/pg_hint_plan"
-path_to_patch="kepler/database_integrations/postgres/13/kepler_extension.patch"
+path_to_pg_hint_plan="$HOME/pg_hint_plan"
+path_to_patch="$HOME/kepler/kepler/database_integrations/postgres/13/kepler_extension.patch"
 cd $path_to_pg_hint_plan
 patch -p0 < $path_to_patch
 sudo make install
@@ -187,7 +191,9 @@ sudo service postgresql restart
 Running tests requires a few additional steps after installing Postgres 13 and
 pg_hint_plan. Be sure to have executed `CREATE EXTENSION pg_hint_plan` on the
 database, per instructions above. Open a prompt to Postgres by typing `psql` in
-the shell. Then execute the following commands:
+the shell. As before, if you have not created a user on Postgres yet, you may
+need to use `sudo su - postgres` before typing `psql`. Then execute the
+following commands:
 
 ```
 CREATE USER test SUPERUSER PASSWORD 'test';
