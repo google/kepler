@@ -111,7 +111,7 @@ TEST_PREPROCESSING_CONFIG_0 = [
     {"type": "embedding", "output_dim": 5},
     {"type": "one_hot"},
     {"type": "one_hot", "num_oov_indices": 1},
-    {"type": "std_normalization", "mean": 1453276800, "variance": 1},
+    {"type": "std_normalization", "mean": 1453276800, "variance": 1e10},
 ]
 
 # Corresponds to data_management test_query 0.
